@@ -5,13 +5,9 @@
 #include <cstdlib>
 #include <chrono>
 #include <thread>
+#include <map>
 
 using namespace std;
-
-// Define command to clear the console
-// Use "cls" for Windows and "clear" for Unix based systems
-// const string CONSOLE_CLEAR_COMMAND = "cls";
-const string CONSOLE_CLEAR_COMMAND = "clear";
 
 // Define the matrix cell types IDs
 const int PATH_ID = 0;
@@ -20,7 +16,6 @@ const int CHECKPOINT_ID = 2;
 const int PASSED_PATH_ID = 3;
 const int PASSED_CHECKPOINT_ID = 4;
 const int START_ID = 5;
-const int END_ID = 6;
 
 // Define the symbols used to represent the matrix cell types
 const string WALL_SYMBOL = "██";
@@ -28,8 +23,10 @@ const string PATH_SYMBOL = "  ";
 const string CHECKPOINT_SYMBOL = "* ";
 const string PASSED_PATH_SYMBOL = "• ";
 const string PASSED_CHECKPOINT_SYMBOL = "+ ";
-const string START_SYMBOL = "> ";
-const string END_SYMBOL = " <";
+const string START_SYMBOL = "ST";
+
+// Define constants
+const unsigned int ESTIMATED_TIME_UPDATE_STEPS_INTERVAL = 10;
 
 struct Cell {
   int x, y;
@@ -52,7 +49,8 @@ class Maze {
   vector<vector<int>> finalMaze;
   vector<vector<vector<int>>> generationSteps;
   long long timePerformanceMs = 0;
-  long long iterationsToGenerate = 0;
+  long long iterationsTookToGenerate = 0;
+  long long estimatedTimeLeftMs = 0;
 
  public:
   Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsPercentage) {
@@ -63,16 +61,27 @@ class Maze {
   }
 
   void generateMaze() {
-    // Start the timer.
-    auto startTime = chrono::high_resolution_clock::now();
+    // Clear the console.
+    clearConsole();
 
     // Validate the input.
     validateInputParameters();
 
     // Print the maze generation parameters.
-    cout << "Generating maze..." << "\n";
+    cout << "Maze parameters:" << "\n";
     cout << "- Width: " << width << "\n";
-    cout << "- Height: " << height << "\n\n";
+    cout << "- Height: " << height << "\n";
+    cout << "- Checkpoints percentage: " << checkpointsPercentage << "%" << "\n\n";
+
+    // Wait for user input.
+    cout << "Press enter key to start the maze generation..." << "\n";
+    cin.get();
+
+    // Print the maze generation header.
+    cout << "Generating maze..." << "\n\n";
+
+    // Start the timer.
+    auto startTime = chrono::high_resolution_clock::now();
 
     // Seed the random number generator.
     srand(time(NULL));
@@ -122,7 +131,7 @@ class Maze {
         }
 
         // Increment the number of iterations to generate the maze.
-        iterationsToGenerate++;
+        iterationsTookToGenerate++;
       }
 
       // Check if there are any valid neighbors.
@@ -149,11 +158,16 @@ class Maze {
       generationSteps.push_back(finalMaze);
     }
 
-    // Set the start and end positions.
-    finalMaze[1][0] = START_ID;
-    finalMaze[height - 2][width - 1] = END_ID;
-
-    // Add the final maze state to the list of maze states.
+    // Find a random cell with PATH_ID and set a start position to it
+    bool isFound = false;
+    while (!isFound) {
+      const int x  = rand() % width;
+      const int y = rand() % height;
+      if (finalMaze[y][x] == PATH_ID) {
+        finalMaze[y][x] = START_ID;
+        isFound = true;
+      }
+    }
     generationSteps.push_back(finalMaze);
 
     // Distribute the checkpoints.
@@ -174,7 +188,7 @@ class Maze {
 
   void distributeCheckpoints() {
     // Get the number of path cells.
-    int pathCellsCount = 0;
+    unsigned int pathCellsCount = 0;
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         // Check if the cell is a path.
@@ -184,12 +198,12 @@ class Maze {
         }
 
         // Increment the number of iterations to generate the maze.
-        iterationsToGenerate++;
+        iterationsTookToGenerate++;
       }
     }
 
     // Calculate the number of checkpoints.
-    int checkpointsCount = pathCellsCount * checkpointsPercentage / 100;
+    unsigned int checkpointsCount = pathCellsCount * checkpointsPercentage / 100;
 
     // Distribute the checkpoints.
     int currentCheckpointsCount = 0;
@@ -263,33 +277,28 @@ class Maze {
   }
 
   // Method that visualizes the maze generation.
-  void visualizeMazeGeneration(unsigned int visualizationDurationMs) {
-    // Check if the visualization duration is not 0.
-    if (visualizationDurationMs != 0) {
-      // Prompt the user to visualize the maze generation.
-      cout << "Maze has been generated!\n\n";
-      cout << "Would you like to visualize the maze generation? (y/n):\n";
-      string answer;
-      cout << "--> ";
-      cin >> answer;
-      cout << "\n";
+  void visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
+    // Prompt the user to visualize the maze generation.
+    cout << "Maze has been generated in " << millisecondsToTimeString(timePerformanceMs) << "!\n\n";
+    cout << "Would you like to visualize the maze generation? (Y/N):\n";
+    string answer;
+    cout << "--> ";
+    cin >> answer;
+    cout << "\n";
 
-      // Check if the user wants to visualize the maze generation.
-      if (answer != "y" && answer != "Y") {
-        visualizationDurationMs = 0;
-      }
-    }
-
-    // If the visualization duration is 0, then print the final maze state instantly.
-    if (visualizationDurationMs == 0) {
+    // Check if the user wants to visualize the maze generation.
+    if (answer != "y" && answer != "Y") {
       printMazeState(finalMaze);
       cout << "\nMaze generation completed!\n";
-      cout << "Took " << timePerformanceMs << " ms and " << iterationsToGenerate << " iterations to generate.\n";
+      cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << iterationsTookToGenerate << " iterations) to generate.\n";
       return;
     }
 
+    // Clear the console.
+    clearConsole();
+
     // Define the delay between each step.
-    const unsigned int delay = visualizationDurationMs / generationSteps.size();
+    const unsigned int delay = minVisualizationDurationMs / generationSteps.size();
 
     // Set steps counter.
     unsigned int stepsCount = 0;
@@ -297,13 +306,39 @@ class Maze {
     // Set percentage.
     unsigned int percentage;
 
+    // Set the starting time point.
+    auto timeToVisualizePercentageOfStepsStartMs = chrono::high_resolution_clock::now();
+
+    // Set the ending time point.
+    auto timeToVisualizePercentageOfStepsEndMs = chrono::high_resolution_clock::now();
+
+    // Set default time remaining.
+    estimatedTimeLeftMs = -1;
+
     // Loop through the maze states.
     for (const auto& step : generationSteps) {
       // Clear the console.
-      system(CONSOLE_CLEAR_COMMAND.c_str());
+      clearConsole();
 
       // Increment the steps counter.
       stepsCount++;
+
+      // Check if the steps counter is a multiple of the update each steps.
+      if (stepsCount % ESTIMATED_TIME_UPDATE_STEPS_INTERVAL == 0) {
+          // Stop the timer.
+          timeToVisualizePercentageOfStepsEndMs = chrono::high_resolution_clock::now();
+
+          // Calculate steps left.
+          const unsigned int stepsLeft = generationSteps.size() - stepsCount;
+
+          // Update the estimated time left.
+          estimatedTimeLeftMs = chrono::duration_cast<chrono::milliseconds>(
+              timeToVisualizePercentageOfStepsEndMs - timeToVisualizePercentageOfStepsStartMs
+              ).count() * stepsLeft / ESTIMATED_TIME_UPDATE_STEPS_INTERVAL;
+
+          // Set the starting time point.
+          timeToVisualizePercentageOfStepsStartMs = chrono::high_resolution_clock::now();
+      }
 
       // Calculate the percentage.
       percentage = (stepsCount * 100) / generationSteps.size();
@@ -313,59 +348,266 @@ class Maze {
 
       // Check if the maze generation is completed.
       if (percentage == 100) {
-        cout << "\nMaze generation visualization completed!\n";
-        cout << "Took " << timePerformanceMs << " ms and " << iterationsToGenerate << " iterations to generate.\n";
+        cout << "\nMaze generation visualization completed!\n\n";
+        cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << iterationsTookToGenerate << " iterations) to generate.\n";
       } else {
         // Print the generation status.
-        cout << "\nMaze is being visualized: " << percentage << "%\n";
+        cout << "\nMaze generation is being visualized: " << percentage << "%\n";
+        cout << generateProgressBarString(percentage) << "\n\n";
         cout << "Step: " << stepsCount << " of " << generationSteps.size() << "\n";
-        cout << "Time remaining: " << (delay * (generationSteps.size() - stepsCount)) / 1000 << " seconds.\n";
-        cout << "\nPress CTRL + C to stop the visualization.\n";
+        if (estimatedTimeLeftMs > 0) {
+            cout << "Estimated time remaining: " << millisecondsToTimeString(estimatedTimeLeftMs) << ".\n\n";
+            } else {
+            cout << "Estimated time remaining: Calculating...\n\n";
+        }
+        cout << "Press CTRL + C to stop the visualization.\n";
       }
 
       // Sleep for the delay.
-      this_thread::sleep_for(chrono::milliseconds(delay));
+      if (minVisualizationDurationMs > 0) {
+        this_thread::sleep_for(chrono::milliseconds(delay));
+      }
     }
   }
 
   // Method that prints the maze state.
-  void printMazeState(const vector<vector<int>>& mazeState) {
+  static void printMazeState(const vector<vector<int>>& mazeState) {
+    string output;
     for (const auto& row : mazeState) {
       for (const auto& cell : row) {
         switch (cell) {
           case WALL_ID:
-            cout << WALL_SYMBOL;
+            output += colorString(WALL_SYMBOL, "white", "white", "default");
             break;
           case PATH_ID:
-            cout << PATH_SYMBOL;
+            output += colorString(PATH_SYMBOL, "green", "black", "default");
             break;
           case CHECKPOINT_ID:
-            cout << CHECKPOINT_SYMBOL;
+            output += colorString(CHECKPOINT_SYMBOL, "yellow", "black", "bold");
             break;
           case PASSED_CHECKPOINT_ID:
-            cout << PASSED_CHECKPOINT_SYMBOL;
+            output += colorString(PASSED_CHECKPOINT_SYMBOL, "white", "green", "bold");
             break;
           case PASSED_PATH_ID:
-            cout << PASSED_PATH_SYMBOL;
+            output += colorString(PASSED_PATH_SYMBOL, "green", "black", "default");
             break;
           case START_ID:
-            cout << START_SYMBOL;
-            break;
-          case END_ID:
-            cout << END_SYMBOL;
+            output += colorString(START_SYMBOL, "white", "green", "bold");
             break;
           default:
-            cout << "E ";
+            output += "E ";
         }
       }
-      cout << "\n";
+      output += "\n";
     }
+    fwrite(output.c_str(), sizeof(char), output.size(), stdout);
+  }
+
+  // Methods that colors the string.
+  static string colorString(
+      const string& str,
+      const string& color = "default",
+      const string& backgroundColor = "default",
+      const string& style = "default"
+  ) {
+    // Define prefix and suffix.
+    string prefix = "\033[";
+    string suffix = "\033[0m";
+
+    // Define the color codes.
+    map<string, string> colors = {
+      {"black", "30"},
+      {"red", "31"},
+      {"green", "32"},
+      {"yellow", "33"},
+      {"blue", "34"},
+      {"magenta", "35"},
+      {"cyan", "36"},
+      {"white", "37"}
+    };
+
+    // Define the background color codes.
+    map<string, string> backgroundColors = {
+      {"black", "40"},
+      {"red", "41"},
+      {"green", "42"},
+      {"yellow", "43"},
+      {"blue", "44"},
+      {"magenta", "45"},
+      {"cyan", "46"},
+      {"white", "47"}
+    };
+
+    // Define the style codes.
+    map<string, string> styles = {
+      {"bold", "1"},
+      {"underline", "4"},
+      {"blink", "5"},
+      {"invert", "7"}
+    };
+
+    // Define the codes vector.
+    vector<string> codes;
+
+    // Check if the color is valid
+    if (colors.find(color) != colors.end()) {
+      codes.push_back(colors[color]);
+    }
+
+    // Check if the background color is valid
+    if (backgroundColors.find(backgroundColor) != backgroundColors.end()) {
+      codes.push_back(backgroundColors[backgroundColor]);
+    }
+
+    // Check if the style is valid
+    if (styles.find(style) != styles.end()) {
+      codes.push_back(styles[style]);
+    }
+
+    // Check if there are no codes.
+    if (codes.empty()) {
+      return str;
+    }
+
+    // Join the codes, prefix and suffix.
+    string output = prefix;
+    for (unsigned int i = 0; i < codes.size(); i++) {
+      output += codes[i];
+      if (i != codes.size() - 1) {
+        output += ";";
+      }
+    }
+    output += "m" + str + suffix;
+
+    // Return the output.
+    return output;
+  }
+
+  // Method that clears the console.
+  static void clearConsole() {
+    #if _WIN32
+        system("cls");
+    #else
+        cout << "\033[2J\033[1;1H";
+    #endif
+  }
+
+  // Method that converts milliseconds to time string.
+  static string millisecondsToTimeString(unsigned long long milliseconds) {
+    // Define the time string.
+    string timeString;
+
+    // Calculate the hours.
+    int hours = int(milliseconds / 3600000);
+
+    // Calculate the minutes.
+    int minutes = int((milliseconds % 3600000) / 60000);
+
+    // Calculate the seconds.
+    int seconds = int(((milliseconds % 3600000) % 60000) / 1000);
+
+    // Calculate the milliseconds.
+    int ms = int(((milliseconds % 3600000) % 60000) % 1000);
+
+    // Check if the hours, minutes and seconds are 0.
+    if (hours == 0 && minutes == 0 && seconds == 0) {
+      return to_string(ms) + "ms";
+    }
+
+    // Check if the hours are greater than 0.
+    if (hours > 0) {
+      timeString += to_string(hours) + "h ";
+    }
+
+    // Check if the minutes are greater than 0.
+    if (minutes > 0) {
+      timeString += to_string(minutes) + "m ";
+    }
+
+    // Check if the seconds are greater than 0.
+    if (seconds > 0) {
+      // Get first two digits of the milliseconds.
+      string msStr = to_string(ms);
+      if (msStr.size() == 1) {
+        msStr = "0" + msStr;
+      } else if (msStr.size() > 2) {
+        msStr = msStr.substr(0, 2);
+      }
+
+      // Add the seconds and milliseconds to the time string.
+      timeString += to_string(seconds) + "." + msStr + "s ";
+    }
+
+    // Trim last space.
+    if (timeString[timeString.size() - 1] == ' ') {
+      timeString = timeString.substr(0, timeString.size() - 1);
+    }
+
+    // Return the time string.
+    return timeString;
+  }
+
+  // Method that generates a progress bar string.
+  [[nodiscard]] string generateProgressBarString(unsigned int percentage) const {
+    // Define the progress bar string.
+    string progressBarString;
+
+    // Check if the percentage is greater than 100.
+    if (percentage > 100) {
+      percentage = 100;
+    }
+
+    // Calculate max number of blocks.
+    unsigned int maxNumberOfBlocks = width * 2;
+
+    // Calculate the number of blocks.
+    unsigned int numberOfBlocks = int(maxNumberOfBlocks * (percentage / 100.0));
+
+    // Calculate the number of empty blocks.
+    unsigned int numberOfEmptyBlocks = maxNumberOfBlocks - numberOfBlocks;
+
+    // Add the blocks to the progress bar string.
+    for (unsigned int i = 0; i < numberOfBlocks; i++) {
+      progressBarString += "█";
+    }
+
+    // Add the empty blocks to the progress bar string.
+    for (unsigned int i = 0; i < numberOfEmptyBlocks; i++) {
+      progressBarString += "░";
+    }
+
+    // Return the progress bar string.
+    return progressBarString;
   }
 };
 
-int main() {
-  Maze maze(35, 35, 10);
-  maze.visualizeMazeGeneration(5000);
+int main(int argc, char** argv) {
+  // Define the maze width, height and checkpoints percentage.
+  int mazeWidth = 21;
+  int mazeHeight = 21;
+  int checkpointsPercentage = 100;
+  int minVisualizationDurationMs = 5000;
+
+  // Check if the number of arguments is correct.
+  if (argc == 5) {
+    // Get the maze width.
+    mazeWidth = stoi(argv[1]);
+
+    // Get the maze height.
+    mazeHeight = stoi(argv[2]);
+
+    // Get the number of checkpoints.
+    checkpointsPercentage = stoi(argv[3]);
+
+    // Get the minimum visualization duration.
+    minVisualizationDurationMs = stoi(argv[4]);
+  }
+
+  // Create the maze.
+  Maze maze(mazeWidth, mazeHeight, checkpointsPercentage);
+
+  // Visualize the maze generation.
+  maze.visualizeMazeGeneration(minVisualizationDurationMs);
 
   return 0;
 }
