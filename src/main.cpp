@@ -1,23 +1,30 @@
 #include <iostream>
 #include <utility>
 #include <vector>
-#include <ctime>
 #include <cstdlib>
 #include <chrono>
 #include <thread>
 #include <map>
+#include <random>
 
 using namespace std;
 
-// Define the matrix cell types IDs
-const int PATH_ID = 0;
-const int WALL_ID = 1;
-const int CHECKPOINT_ID = 2;
-const int PASSED_PATH_ID = 3;
-const int PASSED_CHECKPOINT_ID = 4;
-const int START_ID = 5;
+// Define default maze generation parameters.
+const unsigned int DEFAULT_MAZE_WIDTH = 21;
+const unsigned int DEFAULT_MAZE_HEIGHT = 21;
+const unsigned int DEFAULT_CHECKPOINTS_PERCENTAGE = 10;
 
-// Define the symbols used to represent the matrix cell types
+// Define the matrix cell types IDs.
+enum MazeCellTypeIds {
+  PATH_ID = 0,
+  WALL_ID = 1,
+  CHECKPOINT_ID = 2,
+  PASSED_PATH_ID = 3,
+  PASSED_CHECKPOINT_ID = 4,
+  START_ID = 5
+};
+
+// Define the symbols used to represent the matrix cell types.
 const string WALL_SYMBOL = "██";
 const string PATH_SYMBOL = "  ";
 const string CHECKPOINT_SYMBOL = "* ";
@@ -25,34 +32,61 @@ const string PASSED_PATH_SYMBOL = "• ";
 const string PASSED_CHECKPOINT_SYMBOL = "+ ";
 const string START_SYMBOL = "ST";
 
-// Define constants
-const unsigned int ESTIMATED_TIME_UPDATE_STEPS_INTERVAL = 10;
+// Define progress bar symbols.
+const string PROGRESS_BAR_FULL_SYMBOL = "█";
+const string PROGRESS_BAR_EMPTY_SYMBOL = "░";
 
+// Define other constants.
+const unsigned int ESTIMATED_TIME_UPDATE_INTERVAL_STEPS = 10;
+const unsigned int MAZE_GENERATION_VISUALIZATION_MIN_DURATION_MS = 5000;
+
+// Random number generator.
+unsigned int randomGenerator() {
+  // Create a Mersenne Twister random number generator seeded with current time.
+  mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
+
+  // Create a uniform distribution to generate integers between 0 and RAND_MAX.
+  uniform_int_distribution<int> dist(0, RAND_MAX);
+
+  // Return a random number.
+  return dist(gen);
+}
+
+// Structure that represents a cell.
 struct Cell {
-  int x, y;
+  // Position in the X and Y axis.
+  unsigned int x, y;
 
+  // Constructor.
   Cell(int _x, int _y) : x(_x), y(_y) {}
 };
 
+// Structure that represents a cell direction.
 struct Direction {
+  // Offset in the X and Y axis.
   int offsetX, offsetY;
 
+  // Constructor.
   Direction(int _offsetX, int _offsetY) : offsetX(_offsetX), offsetY(_offsetY) {}
 };
 
+// Class that represents the maze.
 class Maze {
  private:
+  // Maze generation parameters.
   unsigned int width;
   unsigned int height;
   unsigned int checkpointsPercentage;
 
-  vector<vector<int>> finalMaze;
-  vector<vector<vector<int>>> generationSteps;
+  // Maze internal variables.
+  vector<vector<unsigned int>> finalMaze;
+  vector<vector<vector<unsigned int>>> generationSteps;
   long long timePerformanceMs = 0;
   long long iterationsTookToGenerate = 0;
   long long estimatedTimeLeftMs = 0;
 
  public:
+  // Constructor.
   Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsPercentage) {
     this->width = _width;
     this->height = _height;
@@ -60,6 +94,7 @@ class Maze {
     generateMaze();
   }
 
+  // Method that generates the maze.
   void generateMaze() {
     // Clear the console.
     clearConsole();
@@ -83,15 +118,12 @@ class Maze {
     // Start the timer.
     auto startTime = chrono::high_resolution_clock::now();
 
-    // Seed the random number generator.
-    srand(time(NULL));
-
     // Initialize the maze with walls.
-    finalMaze = vector<vector<int>>(height, vector<int>(width, WALL_ID));
+    finalMaze = vector<vector<unsigned int>>(height, vector<unsigned int>(width, WALL_ID));
 
     // Define the random start position.
-    int startX = rand() % (width / 2) * 2 + 1;
-    int startY = rand() % (height / 2) * 2 + 1;
+    unsigned int startX = randomGenerator() % (width / 2) * 2 + 1;
+    unsigned int startY = randomGenerator() % (height / 2) * 2 + 1;
 
     // Set the start position to path.
     finalMaze[startY][startX] = PATH_ID;
@@ -110,19 +142,19 @@ class Maze {
     // Generate the maze.
     while (!cells.empty()) {
       // Pick a random cell.
-      int currentCellIndex = rand() % cells.size();
+      unsigned int currentCellIndex = randomGenerator() % cells.size();
       Cell currentCell = cells[currentCellIndex];
 
       // Find all valid neighbors.
-      vector<pair<int, int>> validNeighbors;
+      vector<pair<unsigned int, unsigned int>> validNeighbors;
       for (const auto& move : moves) {
-        int newX = currentCell.x + move.offsetX;
-        int newY = currentCell.y + move.offsetY;
+        int newX = int(currentCell.x) + move.offsetX;
+        int newY = int(currentCell.y) + move.offsetY;
 
         // Check if the neighbor is valid.
         if (isValid(newX, newY)) {
-          int betweenX = (currentCell.x + newX) / 2;
-          int betweenY = (currentCell.y + newY) / 2;
+          unsigned int betweenX = (currentCell.x + newX) / 2;
+          unsigned int betweenY = (currentCell.y + newY) / 2;
 
           // If the cell between the current cell and the neighbor is a wall, then the neighbor is valid.
           if (finalMaze[betweenY][betweenX] == WALL_ID) {
@@ -137,9 +169,9 @@ class Maze {
       // Check if there are any valid neighbors.
       if (!validNeighbors.empty()) {
         // Choose a random neighbor.
-        int randomNeighborIndex = rand() % validNeighbors.size();
-        int newX = validNeighbors[randomNeighborIndex].first;
-        int newY = validNeighbors[randomNeighborIndex].second;
+        unsigned int randomNeighborIndex = randomGenerator() % validNeighbors.size();
+        unsigned int newX = validNeighbors[randomNeighborIndex].first;
+        unsigned int newY = validNeighbors[randomNeighborIndex].second;
 
         // Remove the wall between the current cell and the chosen neighbor.
         finalMaze[(currentCell.y + newY) / 2][(currentCell.x + newX) / 2] = PATH_ID;
@@ -158,11 +190,11 @@ class Maze {
       generationSteps.push_back(finalMaze);
     }
 
-    // Find a random cell with PATH_ID and set a start position to it
+    // Find a random cell with PATH_ID and set a start position to it.
     bool isFound = false;
     while (!isFound) {
-      const int x  = rand() % width;
-      const int y = rand() % height;
+      const unsigned int x  = randomGenerator() % width;
+      const unsigned int y = randomGenerator() % height;
       if (finalMaze[y][x] == PATH_ID) {
         finalMaze[y][x] = START_ID;
         isFound = true;
@@ -186,11 +218,12 @@ class Maze {
     timePerformanceMs = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
   }
 
+  // Method that randomly distributes checkpoints on the maze.
   void distributeCheckpoints() {
     // Get the number of path cells.
     unsigned int pathCellsCount = 0;
-    for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
+    for (unsigned int y = 0; y < height; y++) {
+      for (unsigned int x = 0; x < width; x++) {
         // Check if the cell is a path.
         if (finalMaze[y][x] == PATH_ID) {
           // Increment the number of path cells.
@@ -206,10 +239,10 @@ class Maze {
     unsigned int checkpointsCount = pathCellsCount * checkpointsPercentage / 100;
 
     // Distribute the checkpoints.
-    int currentCheckpointsCount = 0;
+    unsigned int currentCheckpointsCount = 0;
     while (currentCheckpointsCount < checkpointsCount) {
-      int x = rand() % width;
-      int y = rand() % height;
+      unsigned int x = randomGenerator() % width;
+      unsigned int y = randomGenerator() % height;
       if (finalMaze[y][x] == PATH_ID) {
         finalMaze[y][x] = CHECKPOINT_ID;
         currentCheckpointsCount++;
@@ -220,6 +253,7 @@ class Maze {
     generationSteps.push_back(finalMaze);
   }
 
+  // Method that generates the solution.
   void generateSolution() {
     // TODO: Implement the solution generation.
 
@@ -229,11 +263,12 @@ class Maze {
     // - The passed checkpoints must be marked with the PASSED_CHECKPOINT_ID value.
   }
 
+  // Method that filters out the steps where anything is not changing.
   void filterSteps() {
-    vector<vector<vector<int>>> filteredSteps;
+    vector<vector<vector<unsigned int>>> filteredSteps;
     filteredSteps.push_back(generationSteps[0]);
 
-    for (int i = 1; i < generationSteps.size(); i++) {
+    for (unsigned int i = 1; i < generationSteps.size(); i++) {
         if (generationSteps[i] != generationSteps[i-1]) {
           filteredSteps.push_back(generationSteps[i]);
         }
@@ -241,6 +276,7 @@ class Maze {
     generationSteps = filteredSteps;
   }
 
+  // Method that checks if the given input parameters are valid.
   void validateInputParameters() {
     // Check if the width is more than or equal to 4.
     if (width < 4) {
@@ -324,7 +360,7 @@ class Maze {
       stepsCount++;
 
       // Check if the steps counter is a multiple of the update each steps.
-      if (stepsCount % ESTIMATED_TIME_UPDATE_STEPS_INTERVAL == 0) {
+      if (stepsCount % ESTIMATED_TIME_UPDATE_INTERVAL_STEPS == 0) {
           // Stop the timer.
           timeToVisualizePercentageOfStepsEndMs = chrono::high_resolution_clock::now();
 
@@ -334,7 +370,7 @@ class Maze {
           // Update the estimated time left.
           estimatedTimeLeftMs = chrono::duration_cast<chrono::milliseconds>(
               timeToVisualizePercentageOfStepsEndMs - timeToVisualizePercentageOfStepsStartMs
-              ).count() * stepsLeft / ESTIMATED_TIME_UPDATE_STEPS_INTERVAL;
+              ).count() * stepsLeft / ESTIMATED_TIME_UPDATE_INTERVAL_STEPS;
 
           // Set the starting time point.
           timeToVisualizePercentageOfStepsStartMs = chrono::high_resolution_clock::now();
@@ -371,7 +407,7 @@ class Maze {
   }
 
   // Method that prints the maze state.
-  static void printMazeState(const vector<vector<int>>& mazeState) {
+  static void printMazeState(const vector<vector<unsigned int>>& mazeState) {
     string output;
     for (const auto& row : mazeState) {
       for (const auto& cell : row) {
@@ -449,17 +485,17 @@ class Maze {
     // Define the codes vector.
     vector<string> codes;
 
-    // Check if the color is valid
+    // Check if the color is valid.
     if (colors.find(color) != colors.end()) {
       codes.push_back(colors[color]);
     }
 
-    // Check if the background color is valid
+    // Check if the background color is valid.
     if (backgroundColors.find(backgroundColor) != backgroundColors.end()) {
       codes.push_back(backgroundColors[backgroundColor]);
     }
 
-    // Check if the style is valid
+    // Check if the style is valid.
     if (styles.find(style) != styles.end()) {
       codes.push_back(styles[style]);
     }
@@ -498,16 +534,16 @@ class Maze {
     string timeString;
 
     // Calculate the hours.
-    int hours = int(milliseconds / 3600000);
+    unsigned int hours = int(milliseconds / 3600000);
 
     // Calculate the minutes.
-    int minutes = int((milliseconds % 3600000) / 60000);
+    unsigned int minutes = int((milliseconds % 3600000) / 60000);
 
     // Calculate the seconds.
-    int seconds = int(((milliseconds % 3600000) % 60000) / 1000);
+    unsigned int seconds = int(((milliseconds % 3600000) % 60000) / 1000);
 
     // Calculate the milliseconds.
-    int ms = int(((milliseconds % 3600000) % 60000) % 1000);
+    unsigned int ms = int(((milliseconds % 3600000) % 60000) % 1000);
 
     // Check if the hours, minutes and seconds are 0.
     if (hours == 0 && minutes == 0 && seconds == 0) {
@@ -568,12 +604,12 @@ class Maze {
 
     // Add the blocks to the progress bar string.
     for (unsigned int i = 0; i < numberOfBlocks; i++) {
-      progressBarString += "█";
+      progressBarString += PROGRESS_BAR_FULL_SYMBOL;
     }
 
     // Add the empty blocks to the progress bar string.
     for (unsigned int i = 0; i < numberOfEmptyBlocks; i++) {
-      progressBarString += "░";
+      progressBarString += PROGRESS_BAR_EMPTY_SYMBOL;
     }
 
     // Return the progress bar string.
@@ -581,15 +617,15 @@ class Maze {
   }
 };
 
+// Main function.
 int main(int argc, char** argv) {
-  // Define the maze width, height and checkpoints percentage.
-  int mazeWidth = 21;
-  int mazeHeight = 21;
-  int checkpointsPercentage = 100;
-  int minVisualizationDurationMs = 5000;
+  // Define the default maze width, height and checkpoints percentage.
+  unsigned int mazeWidth = DEFAULT_MAZE_WIDTH;
+  unsigned int mazeHeight = DEFAULT_MAZE_HEIGHT;
+  unsigned int checkpointsPercentage = DEFAULT_CHECKPOINTS_PERCENTAGE;
 
   // Check if the number of arguments is correct.
-  if (argc == 5) {
+  if (argc == 4) {
     // Get the maze width.
     mazeWidth = stoi(argv[1]);
 
@@ -598,16 +634,13 @@ int main(int argc, char** argv) {
 
     // Get the number of checkpoints.
     checkpointsPercentage = stoi(argv[3]);
-
-    // Get the minimum visualization duration.
-    minVisualizationDurationMs = stoi(argv[4]);
   }
 
   // Create the maze.
   Maze maze(mazeWidth, mazeHeight, checkpointsPercentage);
 
   // Visualize the maze generation.
-  maze.visualizeMazeGeneration(minVisualizationDurationMs);
+  maze.visualizeMazeGeneration(MAZE_GENERATION_VISUALIZATION_MIN_DURATION_MS);
 
   return 0;
 }
