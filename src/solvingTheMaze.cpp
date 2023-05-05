@@ -5,13 +5,12 @@ using namespace std;
 
 #define ll long long
 
-const int DIM = 40;
-const int DIMMASK  = (1<<20);
+const ll DIMMASK = (1<<23);
 
 const int INF = 1000000007;
 
-int dist[300][300];
-int d[DIMMASK][400];
+int dist[30][30];
+int d[DIMMASK][25];
 int N,res,reslast;
 
 int m,n,maxpoints,matrix[300][300],indexes[1000],matrix2[300][300];
@@ -45,7 +44,7 @@ void generate_matrix(int n, int m){
     //generate random matrix
     for(int i=0; i<n; i++){
         for(int j=0; j<m; j++){
-            if(distribution(generator)>=61){
+            if(distribution(generator)>=63){
                 matrix[i][j]=1;
             }
             else matrix[i][j]=0;
@@ -76,7 +75,7 @@ void put_checkpoints(){
     //put obstacles on the matrix
     for(int i=0; i<n; i++){
         for(int j=0; j<m; j++){
-            if(matrix[i][j]==0 && distribution(generator)>=498 && maxpoints<=19){
+            if(matrix[i][j]==0 && distribution(generator)>=498 && maxpoints<=20){
                 matrix[i][j]=2;
                 maxpoints++;
             }
@@ -187,7 +186,7 @@ void printanswer(ll mask, ll last) {
                 break;
             }
 }
-
+HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
 //function to print the matrix
 void print_matrix(){
@@ -196,26 +195,26 @@ void print_matrix(){
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
                 if (matrix[i][j] == 0) {
-                    cout << matrix[i][j];
+                    cout << "  ";
                 }
                 else if (matrix[i][j] == 1) {
-                    SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
-                    cout << matrix[i][j];
+                    SetConsoleTextAttribute(hConsole, BACKGROUND_RED | FOREGROUND_RED | FOREGROUND_GREEN | BACKGROUND_GREEN | BACKGROUND_BLUE | FOREGROUND_BLUE);
+                    cout << "11";
                     SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
                 }
                 else if (matrix[i][j] == 2) {
                     SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE);
-                    cout << matrix[i][j];
+                    cout << "* ";
                     SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
                 }
                 else if (matrix[i][j] == 3) {
                     SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN);
-                    cout << matrix[i][j];
+                    cout << "S ";
                     SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
                 }
                 else if (matrix[i][j] == 4) {
                     SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN);
-                    cout << matrix[i][j];
+                    cout << ". ";
                     SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
                 }
             }
@@ -229,7 +228,7 @@ int main()
 {
     int number_of_generations=0;
     n=50;
-    m=210;
+    m=105;
     matrix[n-1][m-1]=1;
     while(matrix[n-1][m-1]==1){
         int k;
@@ -317,13 +316,13 @@ int main()
         vector<pair<int, int>> path2;
 
         //print the shortest path
-        int qwe=shortest_path(myPoints[indexes[i]-1], myPoints[indexes[i+1]-1], path2);
+        ll qwe=shortest_path(myPoints[indexes[i]-1], myPoints[indexes[i+1]-1], path2);
         if(qwe==-1){
             break;
         }
 
         //loop for printing the shortest path without start and end points
-        for(int j=1; j<path2.size()-1; j++){
+        for(ll j=1; j<path2.size()-1; j++){
             matrix2[path2[j].first][path2[j].second]=4;
         }
 
