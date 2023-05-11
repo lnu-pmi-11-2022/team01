@@ -2,6 +2,7 @@
 #define CONSTANTS_H
 
 #include <string>
+#include <climits>
 
 using namespace std;
 
