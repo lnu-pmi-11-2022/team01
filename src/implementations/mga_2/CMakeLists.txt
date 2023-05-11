@@ -3,4 +3,4 @@ project(mga_2)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(mga_2 main.cpp)
+add_executable(mga_2 mga_2.cpp)

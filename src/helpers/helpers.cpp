@@ -174,14 +174,29 @@ string generateProgressBarString(unsigned int percentage, unsigned int maxNumber
 
   // Add the blocks to the progress bar string.
   for (unsigned int i = 0; i < numberOfBlocks; i++) {
-    progressBarString += PROGRESS_BAR_FULL_SYMBOL;
+    progressBarString += "█";
   }
 
   // Add the empty blocks to the progress bar string.
   for (unsigned int i = 0; i < numberOfEmptyBlocks; i++) {
-    progressBarString += PROGRESS_BAR_EMPTY_SYMBOL;
+    progressBarString += "░";
   }
 
   // Return the progress bar string.
   return progressBarString;
+}
+
+// Function that stops the function execution flow until the user presses enter.
+void waitForEnter(const string& message) {
+  // Print the message
+  cout << message;
+
+  // Clear the input buffer
+  cin.clear();
+
+  // Discard any remaining input
+  cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+  // Wait for the user to press enter
+  cin.get();
 }

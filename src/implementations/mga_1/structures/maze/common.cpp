@@ -11,17 +11,18 @@ Maze::Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsP
 // Method that visualizes the maze generation.
 void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
   // Prompt the user to visualize the maze generation.
-  cout << "Maze has been generated in " << millisecondsToTimeString(timePerformanceMs) << "!\n\n";
-  cout << "Would you like to visualize the maze generation? (Y/N):\n";
+  cout << colorString("Maze has been generated in ", "green", "black", "bold") << colorString(millisecondsToTimeString(timePerformanceMs), "green", "black", "bold") << "!\n\n";
+  cout << colorString("Would you like to visualize the maze generation?", "yellow", "black", "bold") << " (" << colorString("Y", "green", "default", "bold") << "/" << colorString("N", "red", "default", "bold") << "):\n";
   string answer;
-  cout << "--> ";
+  cout << colorString("-->", "white", "black", "bold") << " ";
   cin >> answer;
   cout << "\n";
 
   // Check if the user wants to visualize the maze generation.
   if (answer != "y" && answer != "Y") {
+    clearConsole();
     printMazeState(finalMaze);
-    cout << "\nMaze generation completed!\n";
+    cout << "\n" << colorString("Maze generation completed!", "green", "black", "bold") << "\n";
     cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << iterationsTookToGenerate << " iterations) to generate.\n";
     return;
   }
@@ -80,11 +81,11 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
 
     // Check if the maze generation is completed.
     if (percentage == 100) {
-      cout << "\nMaze generation visualization completed!\n\n";
+      cout << "\n" << colorString("Maze generation visualization completed!", "green", "black", "bold") << "\n\n";
       cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << iterationsTookToGenerate << " iterations) to generate.\n";
     } else {
       // Print the generation status.
-      cout << "\nMaze generation is being visualized: " << percentage << "%\n";
+      cout << "\n" << colorString("Maze generation is being visualized: ", "yellow", "black", "bold") << colorString(to_string(percentage), "yellow", "black", "bold") << colorString("%", "yellow", "black", "bold") << "\n";
       cout << generateProgressBarString(percentage, width * 2) << "\n\n";
       cout << "Step: " << stepsCount << " of " << generationSteps.size() << "\n";
       if (estimatedTimeLeftMs > 0) {
@@ -92,7 +93,7 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
       } else {
         cout << "Estimated time remaining: Calculating...\n\n";
       }
-      cout << "Press CTRL + C to stop the visualization.\n";
+      cout << colorString("Press CTRL + C to stop the visualization.", "red", "black", "bold") << "\n";
     }
 
     // Sleep for the delay.
@@ -117,18 +118,6 @@ void Maze::filterSteps() {
 
 // Method that checks if the given input parameters are valid.
 void Maze::validateInputParameters() {
-  // Check if the width is more than or equal to 4.
-  if (width < 4) {
-    cout << "The width must at least 4. Exiting...\n";
-    exit(1);
-  }
-
-  // Check if the height is more than or equal to 4.
-  if (height < 4) {
-    cout << "The height must at least 4. Exiting...\n";
-    exit(1);
-  }
-
   // Check if the width is odd.
   if (width % 2 == 0) {
     width++;
@@ -141,7 +130,6 @@ void Maze::validateInputParameters() {
 
   // Check if the checkpoints percentage is between 0 and 100.
   if (checkpointsPercentage < 0 || checkpointsPercentage > 100) {
-    cout << "The checkpoints percentage must be between 0 and 100. Exiting...\n";
-    exit(1);
+    throw invalid_argument("Checkpoints percentage must be between " + to_string(MAZE_MIN_CHECKPOINTS_PERCENTAGE) + " and " + to_string(MAZE_MAX_CHECKPOINTS_PERCENTAGE) + ".");
   }
 }
