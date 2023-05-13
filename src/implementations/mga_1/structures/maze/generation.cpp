@@ -2,24 +2,27 @@
 
 // Method that generates the maze.
 void Maze::generateMaze() {
-  // Clear the console.
-  clearConsole();
-
   // Validate the input.
   validateInputParameters();
 
   // Print the maze generation parameters.
-  cout << "Maze parameters:" << "\n";
-  cout << "- Width: " << width << "\n";
-  cout << "- Height: " << height << "\n";
-  cout << "- Checkpoints percentage: " << checkpointsPercentage << "%" << "\n\n";
+  cout << colorString("Maze parameters:", "yellow", "black", "bold") << "\n";
+  cout << "    - Width: " << width << "\n";
+  cout << "    - Height: " << height << "\n";
+  cout << "    - Checkpoints percentage: " << checkpointsPercentage << "%" << "\n\n";
 
   // Wait for user input.
-  cout << "Press enter key to start the maze generation..." << "\n";
-  cin.get();
+  cout << colorString("Press enter key to start the maze generation...", "green", "black", "bold");
+  waitForEnter("");
 
   // Print the maze generation header.
-  cout << "Generating maze..." << "\n\n";
+  cout << "\n" << colorString("Generating maze...", "yellow", "black", "bold");
+
+  // Print a warning if the maze is large.
+  if (width * height > MAZE_WARNING_THRESHOLD_AREA) {
+    cout << "\n" << colorString("WARNING: The maze is large, so the generation may take a while.", "red", "black", "bold");
+  }
+  cout << "\n\n";
 
   // Start the timer.
   auto startTime = chrono::high_resolution_clock::now();

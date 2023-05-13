@@ -224,7 +224,7 @@ void print_matrix(){
 }
 
 
-int main()
+void mga2()
 {
   int number_of_generations=0;
   n=50;
@@ -336,7 +336,4 @@ int main()
     }
   }
   print_matrix();
-
-
-  return 0;
 }
