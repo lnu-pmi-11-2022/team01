@@ -12,7 +12,7 @@ void Maze::generateMaze() {
   cout << "    - Checkpoints percentage: " << checkpointsPercentage << "%" << "\n\n";
 
   // Wait for user input.
-  cout << colorString("Press enter key to start the maze generation...", "green", "black", "bold");
+  cout << colorString("Press the \"Enter\" key to start the maze generation...", "green", "black", "bold");
   waitForEnter("");
 
   // Print the maze generation header.
@@ -61,7 +61,7 @@ void Maze::generateMaze() {
       int newY = int(currentCell.y) + move.offsetY;
 
       // Check if the neighbor is valid.
-      if (isValid(newX, newY)) {
+      if (isValidWall(newX, newY)) {
         unsigned int betweenX = (currentCell.x + newX) / 2;
         unsigned int betweenY = (currentCell.y + newY) / 2;
 
@@ -99,23 +99,14 @@ void Maze::generateMaze() {
     generationSteps.push_back(finalMaze);
   }
 
-  // Find a random cell with PATH_ID and set a start position to it.
-  bool isFound = false;
-  while (!isFound) {
-    const unsigned int x  = randomGenerator() % width;
-    const unsigned int y = randomGenerator() % height;
-    if (finalMaze[y][x] == PATH_ID) {
-      finalMaze[y][x] = START_ID;
-      isFound = true;
-    }
-  }
-  generationSteps.push_back(finalMaze);
-
   // Distribute the checkpoints.
-  distributeCheckpoints();
+  unsigned int numberOfCheckpoints = distributeCheckpoints();
 
-  // Generate the solution.
-  generateSolution();
+  // Check if there are any checkpoints.
+  if (numberOfCheckpoints > 0) {
+    // Generate the solution.
+    generateSolution();
+  }
 
   // Filter out the steps where the path is not changing.
   filterSteps();
@@ -128,24 +119,15 @@ void Maze::generateMaze() {
 }
 
 // Method that randomly distributes checkpoints on the maze.
-void Maze::distributeCheckpoints() {
+unsigned int Maze::distributeCheckpoints() {
   // Get the number of path cells.
-  unsigned int pathCellsCount = 0;
-  for (unsigned int y = 0; y < height; y++) {
-    for (unsigned int x = 0; x < width; x++) {
-      // Check if the cell is a path.
-      if (finalMaze[y][x] == PATH_ID) {
-        // Increment the number of path cells.
-        pathCellsCount++;
-      }
+  unsigned int pathCellsCount = getTheNumberOfCells(PATH_ID);
 
-      // Increment the number of iterations to generate the maze.
-      iterationsTookToGenerate++;
-    }
-  }
+  // Calculate the requested number of checkpoints.
+  requestedNumberOfCheckpoints = pathCellsCount * checkpointsPercentage / 100;
 
   // Calculate the number of checkpoints.
-  unsigned int checkpointsCount = pathCellsCount * checkpointsPercentage / 100;
+  unsigned int checkpointsCount = min(requestedNumberOfCheckpoints, MAZE_MAX_CHECKPOINTS_NUMBER);
 
   // Distribute the checkpoints.
   unsigned int currentCheckpointsCount = 0;
@@ -155,9 +137,15 @@ void Maze::distributeCheckpoints() {
     if (finalMaze[y][x] == PATH_ID) {
       finalMaze[y][x] = CHECKPOINT_ID;
       currentCheckpointsCount++;
+
+      // Add the maze state to the list of maze states.
+      generationSteps.push_back(finalMaze);
     }
   }
 
-  // Add the final maze state to the list of maze states.
-  generationSteps.push_back(finalMaze);
+  // Set the actual number of checkpoints.
+  actualNumberOfCheckpoints = checkpointsCount;
+
+  // Return the number of checkpoints.
+  return checkpointsCount;
 }

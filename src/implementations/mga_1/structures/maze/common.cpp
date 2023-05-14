@@ -23,7 +23,13 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
     clearConsole();
     printMazeState(finalMaze);
     cout << "\n" << colorString("Maze generation completed!", "green", "black", "bold") << "\n";
+    if (actualNumberOfCheckpoints < requestedNumberOfCheckpoints) {
+      cout << colorString("The number of checkpoints was decreased from " + to_string(requestedNumberOfCheckpoints) + " to " + to_string(actualNumberOfCheckpoints) + " to speed up maze generation.", "white", "red", "bold") << "\n\n";
+    }
     cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << iterationsTookToGenerate << " iterations) to generate.\n";
+    if (minPathLength > 0) {
+      cout << "Minimum path length: " << minPathLength << " cells.\n";
+    }
     return;
   }
 
@@ -82,7 +88,16 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
     // Check if the maze generation is completed.
     if (percentage == 100) {
       cout << "\n" << colorString("Maze generation visualization completed!", "green", "black", "bold") << "\n\n";
+      if (actualNumberOfCheckpoints < requestedNumberOfCheckpoints) {
+        cout << colorString(
+            "The number of checkpoints was decreased from " + to_string(requestedNumberOfCheckpoints) + " to "
+                + to_string(actualNumberOfCheckpoints) + " to speed up maze generation.", "white", "red", "bold")
+             << "\n\n";
+      }
       cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << iterationsTookToGenerate << " iterations) to generate.\n";
+      if (minPathLength > 0) {
+        cout << "Minimum path length: " << minPathLength << " cells.\n";
+      }
     } else {
       // Print the generation status.
       cout << "\n" << colorString("Maze generation is being visualized: ", "yellow", "black", "bold") << colorString(to_string(percentage), "yellow", "black", "bold") << colorString("%", "yellow", "black", "bold") << "\n";

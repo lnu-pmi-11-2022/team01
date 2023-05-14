@@ -10,7 +10,9 @@ enum MazeCellTypeIds {
   CHECKPOINT_ID = 2,
   PASSED_PATH_ID = 3,
   PASSED_CHECKPOINT_ID = 4,
-  START_ID = 5
+  CURRENT_POSITION_ID = 5,
+  START_ID = 6,
+  END_ID = 7
 };
 
 #endif
