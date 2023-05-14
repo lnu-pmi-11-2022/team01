@@ -337,40 +337,7 @@ Path Maze::constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path>&
     iterationsTookToGenerate++;
   }
 
-  // Prevent the path from continuing after the last checkpoint.
-  vector<Cell> markedCheckpoints;
-  for (int i = 0; i < filteredFinalPath.size() - 1; i++) {
-    if (markedCheckpoints.size() == actualNumberOfCheckpoints) {
-      // Remove the current and the next cells from the final path.
-      filteredFinalPath.erase(filteredFinalPath.begin() + i, filteredFinalPath.end() - 1);
-
-      // Stop iterating over the final path.
-      break;
-    }
-
-    // Check if the current cell is a checkpoint.
-    if (finalMaze[filteredFinalPath[i].y][filteredFinalPath[i].y] == CHECKPOINT_ID) {
-      // Check if the current checkpoint was already added before.
-        bool isMarked = false;
-        for (Cell cell : markedCheckpoints) {
-          if (cell == filteredFinalPath[i]) {
-            isMarked = true;
-            break;
-          }
-
-          // Increment the number of iterations to generate the maze.
-          iterationsTookToGenerate++;
-        }
-
-        // If the current checkpoint was not added before, add it to the marked checkpoints.
-        if (!isMarked) {
-          markedCheckpoints.push_back(filteredFinalPath[i]);
-        }
-    }
-
-    // Increment the number of iterations to generate the maze.
-    iterationsTookToGenerate++;
-  }
+  // TODO: Filter out cells when the path passed through all the checkpoints.
 
   // Return the final path.
   return {filteredFinalPath, (double)(filteredFinalPath.size() - 1), checkpointsOrder};
