@@ -5,6 +5,7 @@
 #include <vector>
 #include <queue>
 #include <set>
+#include <algorithm>
 #include "../cell/cell.h"
 #include "../path/path.h"
 #include "../direction/direction.h"
