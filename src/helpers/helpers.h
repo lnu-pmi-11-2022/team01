@@ -33,6 +33,6 @@ string millisecondsToTimeString(unsigned long long milliseconds);
 string generateProgressBarString(unsigned int percentage, unsigned int maxNumberOfBlocks);
 
 // Function that stops the function execution flow until the user presses enter.
-void waitForEnter(const string& message = "Press enter to continue...");
+void waitForEnter(const string& message = "Press the \"Enter\" key to continue...");
 
 #endif

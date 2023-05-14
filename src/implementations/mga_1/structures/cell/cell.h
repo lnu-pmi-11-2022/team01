@@ -6,10 +6,16 @@ using namespace std;
 // Structure that represents a cell.
 struct Cell {
   // Position in the X and Y axis.
-  unsigned int x, y;
+  int x, y;
 
   // Constructor.  
   Cell(int _x, int _y);
+
+  // Overload of the == operator.
+  bool operator==(const Cell& cell) const;
+
+  // Overload of the != operator.
+  bool operator!=(const Cell& cell) const;
 };
 
 #endif
