@@ -65,3 +65,20 @@ unsigned int Maze::getTheNumberOfCells(MazeCellTypeIds type) {
   return cellsCount;
 }
 
+// Method that gets the name of solving algorithm.
+string Maze::getSolvingAlgorithmName() {
+  // Define the name of the solving algorithm.
+  string solvingAlgorithmName;
+
+  // Find the name of the solving algorithm.
+  for (auto & algorithm : SUPPORTED_SOLVING_ALGORITHMS) {
+      if (algorithm.first == solvingAlgorithm) {
+        solvingAlgorithmName = algorithm.second;
+        break;
+      }
+  }
+
+  // Return the name of the solving algorithm.
+  return solvingAlgorithmName;
+}
+

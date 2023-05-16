@@ -156,6 +156,47 @@ string millisecondsToTimeString(unsigned long long milliseconds) {
   return timeString;
 }
 
+// Function that splits a large number into blocks.
+string splitNumberIntoBlocks(unsigned long long number) {
+    // Define the number string.
+    string numberString = to_string(number);
+
+    // Define the output string.
+    string outputString;
+
+    // Define the number of blocks.
+    unsigned int numberOfBlocks = int(numberString.size() / 3);
+
+    // Define the number of digits in the first block.
+    unsigned int numberOfDigitsInFirstBlock = numberString.size() % 3;
+
+    // Check if the number of digits in the first block is 0.
+    if (numberOfDigitsInFirstBlock == 0) {
+        numberOfDigitsInFirstBlock = 3;
+    }
+
+    // Add the first block to the output string.
+    outputString += numberString.substr(0, numberOfDigitsInFirstBlock);
+
+    // Add the other blocks to the output string.
+    for (unsigned int i = 0; i < numberOfBlocks; i++) {
+        outputString += " " + numberString.substr(numberOfDigitsInFirstBlock + i * 3, 3);
+    }
+
+    // Trim the output string if it starts with a space.
+    if (outputString[0] == ' ') {
+        outputString = outputString.substr(1, outputString.size() - 1);
+    }
+
+    // Trim the output string if it ends with a space.
+    if (outputString[outputString.size() - 1] == ' ') {
+        outputString = outputString.substr(0, outputString.size() - 1);
+    }
+
+    // Return the output string.
+    return outputString;
+}
+
 // Function that generates a progress bar string.
 string generateProgressBarString(unsigned int percentage, unsigned int maxNumberOfBlocks) {
   // Define the progress bar string.

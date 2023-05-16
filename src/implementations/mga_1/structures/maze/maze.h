@@ -21,7 +21,9 @@ class Maze {
   // Maze generation parameters.
   unsigned int width;
   unsigned int height;
-  unsigned int checkpointsPercentage;
+  unsigned int checkpointsValue;
+  CheckpointSettingType checkpointSettingType;
+  SupportedSolvingAlgorithms solvingAlgorithm;
 
   // Maze internal variables.
   vector<vector<unsigned int>> finalMaze;
@@ -37,7 +39,7 @@ class Maze {
 
  public:
   // Constructor.
-  Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsPercentage);
+  Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsValue, CheckpointSettingType checkpointSettingType, SupportedSolvingAlgorithms _solvingAlgorithm);
 
   // Method that generates the maze.
   void generateMaze();
@@ -57,8 +59,11 @@ class Maze {
   // Method that creates an adjacency matrix from a list of paths.
   vector<vector<double>> createAdjacencyMatrix(const vector<Path>& paths);
 
-  // Method that implements the traveling salesman problem algorithm.
-  vector<Cell> tspAlgorithm(vector<vector<double>> adjacencyMatrix);
+  // Method that implements the traveling salesman problem using brute force algorithm.
+  vector<Cell> tspBruteForce(vector<vector<double>> adjacencyMatrix);
+
+  // Method that implements the traveling salesman problem using Held-Karp (dynamic programming) algorithm.
+  vector<Cell> tspHeldKarp(vector<vector<double>> adjacencyMatrix);
 
   // Method that constructs the final path from the order of the checkpoints and the paths.
   Path constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path>& paths);
@@ -89,6 +94,9 @@ class Maze {
 
   // Method that gets the number of cells of a given type.
   unsigned int getTheNumberOfCells(MazeCellTypeIds type);
+
+  // Method that gets the solving algorithm name.
+  string getSolvingAlgorithmName();
 };
 
 #endif
