@@ -12,6 +12,3 @@ add_library(helpers src/helpers/helpers.cpp)
 
 add_executable(main src/main.cpp)
 target_link_libraries(main mga_1 helpers)
-
-
-add_executable(playground src/playground.cpp)
