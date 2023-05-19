@@ -9,6 +9,7 @@
 #include <utility>
 #include <thread>
 #include <atomic>
+#include <mutex>
 #include <SFML/Audio.hpp>
 #include "../cell/cell.h"
 #include "../path/path.h"
