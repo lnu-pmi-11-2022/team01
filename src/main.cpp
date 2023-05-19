@@ -48,7 +48,6 @@ int main(int argc, char** argv) {
         break;
       case 2:
         mga2();
-        // TODO: Start the second maze generation algorithm.
         break;
       case 3:
         break;
