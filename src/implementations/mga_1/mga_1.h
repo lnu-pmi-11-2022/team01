@@ -7,6 +7,6 @@
 using namespace std;
 
 // Function that runs the maze generation algorithm.
-void mga1();
+void mga1(const string& executablePath);
 
 #endif

@@ -17,9 +17,10 @@ enum MazeCellTypeIds {
 
 // Define supported algorithms.
 enum SupportedSolvingAlgorithms {
-  BRUTE_FORCE = 0,
-  HELD_KARP = 1,
-  NONE = 2
+  HELD_KARP_PARALLEL = 1,
+  HELD_KARP = 0,
+  BRUTE_FORCE = 2,
+  NONE = 3
 };
 
 // Define checkpoint settings type.

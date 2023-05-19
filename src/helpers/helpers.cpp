@@ -238,6 +238,14 @@ void waitForEnter(const string& message) {
   // Discard any remaining input
   cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-  // Wait for the user to press enter
+  // Wait for the user to press the "Enter" key
   cin.get();
+}
+
+// Function that gets the file path of a file relative to the executable path.
+string getFilePath(const string& executablePath, const string& filePath) {
+  // Append the file path to the executable path and return the result
+  size_t lastSlashIndex = executablePath.find_last_of('/');
+  string executableDirectory = executablePath.substr(0, lastSlashIndex + 1);
+  return executableDirectory + filePath;
 }

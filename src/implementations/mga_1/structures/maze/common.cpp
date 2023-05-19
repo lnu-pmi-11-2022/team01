@@ -1,12 +1,13 @@
 #include "maze.h"
 
 // Constructor.
-Maze::Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsValue, CheckpointSettingType _checkpointSettingType, SupportedSolvingAlgorithms _solvingAlgorithm) {
+Maze::Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsValue, CheckpointSettingType _checkpointSettingType, SupportedSolvingAlgorithms _solvingAlgorithm, string _executablePath) {
   this->width = _width;
   this->height = _height;
   this->checkpointsValue = _checkpointsValue;
   this->checkpointSettingType = _checkpointSettingType;
   this->solvingAlgorithm = _solvingAlgorithm;
+  this->executablePath = std::move(_executablePath);
   generateMaze();
 }
 
@@ -54,6 +55,24 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
     cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << splitNumberIntoBlocks(iterationsTookToGenerate) << " iterations) to generate.\n";
     return;
   }
+
+  // Start playing the background audio.
+  SoundBuffer buffer;
+  buffer.loadFromFile(getFilePath(executablePath, VISUALIZATION_BG_AUDIO_FILE_PATH));
+
+  // Create a sound and play it in a loop in a separate thread
+  Sound sound(buffer);
+  sound.setLoop(true);
+  atomic<bool> stopFlag(false);
+  thread soundThread([&]() {
+    while (!stopFlag.load()) {
+      sound.play();
+      while (sound.getStatus() == Sound::Playing && !stopFlag.load()) {
+        // Wait for the sound to finish playing or for stopFlag to be set
+      }
+      sound.stop();
+    }
+  });
 
   // Clear the console.
   clearConsole();
@@ -156,6 +175,10 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
       this_thread::sleep_for(chrono::milliseconds(delay));
     }
   }
+
+  // Stop the audio and join the audio thread
+  stopFlag.store(true);
+  soundThread.join();
 }
 
 // Method that filters out the steps where anything is not changing.
