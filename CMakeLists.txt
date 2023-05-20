@@ -8,5 +8,5 @@ add_subdirectory(src/implementations/mga_2)
 
 add_library(helpers src/helpers/helpers.cpp)
 
-add_executable(main src/main.cpp)
-target_link_libraries(main mga_1 helpers)
+add_executable(mga src/main.cpp)
+target_link_libraries(mga mga_1 helpers)
