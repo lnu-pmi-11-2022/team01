@@ -6,6 +6,11 @@
 #include <queue>
 #include <set>
 #include <algorithm>
+#include <utility>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <SFML/Audio.hpp>
 #include "../cell/cell.h"
 #include "../path/path.h"
 #include "../direction/direction.h"
@@ -14,6 +19,7 @@
 #include "../../models/models.h"
 
 using namespace std;
+using namespace sf;
 
 // Class that represents the maze.
 class Maze {
@@ -28,6 +34,7 @@ class Maze {
   // Maze internal variables.
   vector<vector<unsigned int>> finalMaze;
   vector<vector<vector<unsigned int>>> generationSteps;
+  string executablePath;
 
   // Maze generation statistics.
   long long timePerformanceMs = 0;
@@ -39,7 +46,7 @@ class Maze {
 
  public:
   // Constructor.
-  Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsValue, CheckpointSettingType checkpointSettingType, SupportedSolvingAlgorithms _solvingAlgorithm);
+  Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsValue, CheckpointSettingType checkpointSettingType, SupportedSolvingAlgorithms _solvingAlgorithm, string _executablePath);
 
   // Method that generates the maze.
   void generateMaze();
@@ -59,11 +66,14 @@ class Maze {
   // Method that creates an adjacency matrix from a list of paths.
   vector<vector<double>> createAdjacencyMatrix(const vector<Path>& paths);
 
+  // Method that implements the traveling salesman problem using Held-Karp (dynamic programming) algorithm and runs it in a single thread.
+  vector<Cell> tspHeldKarp(vector<vector<double>> adjacencyMatrix);
+
+  // Method that implements the traveling salesman problem using Held-Karp (dynamic programming) algorithm and runs it in multiple threads.
+  vector<Cell> tspHeldKarpParallel(vector<vector<double>> adjacencyMatrix);
+
   // Method that implements the traveling salesman problem using brute force algorithm.
   vector<Cell> tspBruteForce(vector<vector<double>> adjacencyMatrix);
-
-  // Method that implements the traveling salesman problem using Held-Karp (dynamic programming) algorithm.
-  vector<Cell> tspHeldKarp(vector<vector<double>> adjacencyMatrix);
 
   // Method that constructs the final path from the order of the checkpoints and the paths.
   Path constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path>& paths);

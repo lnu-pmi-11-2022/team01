@@ -1,23 +1,24 @@
 #include "mga_1.h"
-#include "constants/constants.h"
 
 // Function that prompts the user for a parameter.
 unsigned int promptForParameter(const string& parameterName, unsigned int minValue, unsigned int maxValue) {
   // Initialize the parameter value.
-  bool valid = false;
-  unsigned int parameterValue;
+  unsigned int parameterValue = 0;
 
   // Prompt the user for the parameter value until it is valid.
-  while (!valid) {
+  while (true) {
     cout << colorString("Enter the " + parameterName + ":", "green", "black", "bold") << "\n";
     cout << colorString("-->", "yellow", "black", "bold") << " ";
-    cin >> parameterValue;
 
-    // Validate the maze width.
-    if (parameterValue < minValue || parameterValue > maxValue) {
+    // Check if input is valid.
+    if (!(cin >> parameterValue)) {
+      cout << "\n" << colorString("Invalid input. Please try again.", "red", "black", "bold") << "\n\n";
+      cin.clear();
+      cin.ignore(numeric_limits<streamsize>::max(), '\n'); // clear and ignore any invalid input
+    } else if (parameterValue < minValue || parameterValue > maxValue) {
       cout << "\n" << colorString("The " + parameterName + " must be between " + to_string(minValue) + " and " + to_string(maxValue) + "!", "red", "black", "bold") << "\n\n";
     } else {
-      valid = true;
+      break;
     }
   }
 
@@ -32,26 +33,28 @@ unsigned int promptForParameter(const string& parameterName, unsigned int minVal
 template <typename T>
 T promptForChoice(const string& message, vector<pair<T, string>> choices) {
   // Initialize the choice.
-  bool isValid = false;
-  int choice;
+  int choice = -1;
 
   // List the choices.
   cout << colorString(message, "green", "black", "bold") << "\n";
   for (int i = 0; i < choices.size(); i++) {
-      cout << "  " << i + 1 << ". " << choices[i].second << "\n";
+    cout << "  " << i + 1 << ". " << choices[i].second << "\n";
   }
 
   // Prompt the user for the choice until it is valid.
-  while (!isValid) {
-      cout << colorString("-->", "yellow", "black", "bold") << " ";
-      cin >> choice;
+  while (choice < 1 || choice > choices.size()) {
+    cout << colorString("-->", "yellow", "black", "bold") << " ";
+    cin >> choice;
 
-      // Validate the choice.
-      if (choice < 1 || choice > choices.size()) {
-          cout << "\n" << colorString("Invalid choice. Please try again.", "red", "black", "bold") << "\n";
-      } else {
-        isValid = true;
-      }
+    // Handle invalid input.
+    if (cin.fail()) {
+      cin.clear();
+      cin.ignore(numeric_limits<streamsize>::max(), '\n');
+      cout << "\n" << colorString("Invalid input. Please try again.", "red", "black", "bold") << "\n";
+      choice = -1;
+    } else if (choice < 1 || choice > choices.size()) {
+      cout << "\n" << colorString("Invalid choice. Please try again.", "red", "black", "bold") << "\n";
+    }
   }
 
   // Print a new line.
@@ -62,7 +65,7 @@ T promptForChoice(const string& message, vector<pair<T, string>> choices) {
 }
 
 // Function that runs the maze generation algorithm.
-void mga1() {
+void mga1(const string& executablePath) {
   // Clear the console.
   clearConsole();
 
@@ -117,7 +120,7 @@ void mga1() {
   }
 
   // If the checkpoints value exceeds the maximum allowed for the chosen algorithm, print a warning message and decrease the value to the maximum allowed.
-  if (solvingAlgorithm == SupportedSolvingAlgorithms::HELD_KARP && checkpointSetting == CheckpointSettingType::NUMBER && checkpointsValue > MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP) {
+  if ((solvingAlgorithm == SupportedSolvingAlgorithms::HELD_KARP || solvingAlgorithm == SupportedSolvingAlgorithms::HELD_KARP_PARALLEL) && checkpointSetting == CheckpointSettingType::NUMBER && checkpointsValue > MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP) {
     cout << colorString("The number of checkpoints was decreased from " + to_string(checkpointsValue) + " to the maximum allowed " + to_string(MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP) + " for this algorithm.", "white", "red", "bold") << "\n\n";
     checkpointsValue = MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP;
   }
@@ -127,7 +130,7 @@ void mga1() {
   }
 
   // Create the maze.
-  Maze maze(mazeWidth, mazeHeight, checkpointsValue, checkpointSetting, solvingAlgorithm);
+  Maze maze(mazeWidth, mazeHeight, checkpointsValue, checkpointSetting, solvingAlgorithm, executablePath);
 
   // Visualize the maze generation.
   maze.visualizeMazeGeneration(MAZE_GENERATION_VISUALIZATION_MIN_DURATION_MS);

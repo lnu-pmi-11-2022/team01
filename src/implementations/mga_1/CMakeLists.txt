@@ -9,6 +9,33 @@ add_library(cell structures/cell/cell.cpp)
 add_library(path structures/path/path.cpp)
 add_library(direction structures/direction/direction.cpp)
 
-target_link_libraries(mga_1 maze cell path direction)
+# SFML is required for this project.
 
-target_include_directories(mga_1 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# To install SFML on Ubuntu, run the following command:
+# sudo apt-get install libsfml-dev
+
+# To install SFML on Windows, download the binaries from the official website:
+# https://www.sfml-dev.org/download/sfml/2.5.1/
+# and add the SFML_ROOT environment variable to the path of the SFML directory
+# (e.g. C:\SFML-2.5.1)
+
+# To install SFML on Mac, run the following command:
+# brew install sfml
+find_package(SFML 2.5 COMPONENTS audio REQUIRED)
+
+# If you are using Linux, you can comment out the following lines.
+#set(SFML_INCLUDE_DIR /usr/include/SFML)
+#set(SFML_LIBRARY_DIR /usr/lib/x86_64-linux-gnu)
+
+# If you are using Windows, you can comment out the following lines.
+#set(SFML_INCLUDE_DIR C:/SFML-2.5.1/include)
+#set(SFML_LIBRARY_DIR C:/SFML-2.5.1/lib)
+
+# If you are using MacOS and installed SFML using Homebrew, you can comment out the following lines.
+set(SFML_INCLUDE_DIR /opt/homebrew/include)
+set(SFML_LIBRARY_DIR /opt/homebrew/lib)
+
+include_directories(${SFML_INCLUDE_DIR})
+link_directories(${SFML_LIBRARY_DIR})
+
+target_link_libraries(mga_1 maze cell path direction sfml-audio)

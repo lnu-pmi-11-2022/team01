@@ -25,6 +25,9 @@ void Maze::generateSolution() {
   cout << colorString("Applying the chosen TSP solving algorithm...", "yellow", "black", "bold") << "\n";
   vector<Cell> tspResult;
   switch (solvingAlgorithm) {
+    case SupportedSolvingAlgorithms::HELD_KARP_PARALLEL:
+      tspResult = tspHeldKarpParallel(matrix);
+      break;
     case SupportedSolvingAlgorithms::HELD_KARP:
       tspResult = tspHeldKarp(matrix);
       break;
@@ -234,8 +237,7 @@ vector<vector<double>> Maze::createAdjacencyMatrix(const vector<Path> &paths) {
   return matrix;
 }
 
-// Method that implements the traveling salesman problem using Held-Karp (dynamic programming) algorithm.
-// TODO: Fix the algorithm picking the wrong starting point.
+// Method that implements the traveling salesman problem using Held-Karp (dynamic programming) algorithm and runs it in a single thread.
 vector<Cell> Maze::tspHeldKarp(vector<vector<double>> adjacencyMatrix) {
   // Get all the checkpoints and their quantity.
   const vector<Cell> checkpoints = getCheckpoints();
@@ -250,129 +252,206 @@ vector<Cell> Maze::tspHeldKarp(vector<vector<double>> adjacencyMatrix) {
   // Define a matrix to reconstruct the path.
   auto** parentMatrix = new int*[checkpointsQuantity];
   for (int i = 0; i < checkpointsQuantity; i++) {
-      parentMatrix[i] = new int[1 << checkpointsQuantity];
+    parentMatrix[i] = new int[1 << checkpointsQuantity];
   }
 
-  // Initialize the memoization table with default values.
-  for (int i = 0; i < checkpointsQuantity; i++) {
-    for (int j = 0; j < (1 << checkpointsQuantity); j++) {
-      memoizationMatrix[i][j] = -1;
-      parentMatrix[i][j] = -1;
-
-      // Increment the number of iterations to generate the maze.
-      iterationsTookToGenerate++;
-    }
-  }
-
-  // Set the path that starts and ends at the first checkpoint.
-  memoizationMatrix[0][1] = 0;
-
-  // Iterate over all the possible subsets of checkpoints.
-  for (int mask = 1; mask < (1 << checkpointsQuantity); mask++) {
-    // Iterate over all the checkpoints.
+  // Iterate over all the checkpoints and find the shortest path starting from each checkpoint.
+  vector<Cell> shortestPath;
+  double shortestPathLength = numeric_limits<double>::max();
+  for (int startPoint = 0; startPoint < checkpointsQuantity; startPoint++) {
+    // Initialize the memoization table with default values.
     for (int i = 0; i < checkpointsQuantity; i++) {
-      // If the current checkpoint is not in the current subset, skip it.
-      if (!(mask & (1 << i))) continue;
+      for (int j = 0; j < (1 << checkpointsQuantity); j++) {
+        memoizationMatrix[i][j] = -1;
+        parentMatrix[i][j] = -1;
+      }
+    }
 
+    // Set the path that starts and ends at the current checkpoint.
+    memoizationMatrix[startPoint][1 << startPoint] = 0;
+
+    // Iterate over all the possible subsets of checkpoints.
+    for (int mask = 1; mask < (1 << checkpointsQuantity); mask++) {
       // Iterate over all the checkpoints.
-      for (int j = 0; j < checkpointsQuantity; j++) {
-        // Increment the number of iterations to generate the maze.
-        iterationsTookToGenerate++;
+      for (int i = 0; i < checkpointsQuantity; i++) {
+        // If the current checkpoint is not in the current subset, skip it.
+        if (!(mask & (1 << i))) continue;
 
-        // If the current checkpoint is in the current subset, skip it.
-        if (mask & (1 << j) || i == j) continue;
+        // Iterate over all the checkpoints.
+        for (int j = 0; j < checkpointsQuantity; j++) {
+          // If the current checkpoint is in the current subset or is the same as the current checkpoint, skip it.
+          if (mask & (1 << j) || i == j) continue;
 
-        // Calculate the new mask.
-        int newMask = mask | (1 << j);
+          // Calculate the new mask.
+          int newMask = mask | (1 << j);
 
-        // Check if the new mask is valid and if the path between the current and the next checkpoint exists.
-        if (memoizationMatrix[j][newMask] == -1 || memoizationMatrix[j][newMask] > memoizationMatrix[i][mask] + adjacencyMatrix[i][j]) {
-          // Update the memoization table and the parent matrix.
-          memoizationMatrix[j][newMask] = memoizationMatrix[i][mask] + adjacencyMatrix[i][j];
-          parentMatrix[j][newMask] = i;
+          // Check if the new mask is valid and if the path between the current and the next checkpoint exists.
+          if (memoizationMatrix[j][newMask] == -1 || memoizationMatrix[j][newMask] > memoizationMatrix[i][mask] + adjacencyMatrix[i][j]) {
+            // Update the memoization table and the parent matrix.
+            memoizationMatrix[j][newMask] = memoizationMatrix[i][mask] + adjacencyMatrix[i][j];
+            parentMatrix[j][newMask] = i;
+          }
         }
+      }
+    }
+
+    // Find the shortest path that starts and ends at the current checkpoint.
+    for (int i = 0; i < checkpointsQuantity; i++) {
+      if (i == startPoint) continue;
+      if (shortestPathLength > memoizationMatrix[i][(1 << checkpointsQuantity) - 1] + adjacencyMatrix[i][startPoint]) {
+        shortestPathLength = memoizationMatrix[i][(1 << checkpointsQuantity) - 1] + adjacencyMatrix[i][startPoint];
+        shortestPath.clear();
+
+        // Reconstruct the shortest path.
+        int currentCheckpoint = i;
+        int currentMask = (1 << checkpointsQuantity) - 1;
+        while (currentCheckpoint != -1) {
+          shortestPath.push_back(checkpoints[currentCheckpoint]);
+          int parentCheckpoint = parentMatrix[currentCheckpoint][currentMask];
+          int parentMask = currentMask ^ (1 << currentCheckpoint);
+          currentCheckpoint = parentCheckpoint;
+          currentMask = parentMask;
+        }
+        reverse(shortestPath.begin(), shortestPath.end());
       }
     }
   }
 
-  // Define the end of the path.
-  int end = 0;
-
-  // Iterate over all the checkpoints.
-  for (int i = 1; i < checkpointsQuantity; i++) {
-    // Increment the number of iterations to generate the maze.
-    iterationsTookToGenerate++;
-
-    // If the current checkpoint is not in the current subset, skip it.
-    if (memoizationMatrix[i][(1 << checkpointsQuantity) - 1] == -1) continue;
-
-    // Check if the path between the current and the next checkpoint exists.
-    if (memoizationMatrix[i][(1 << checkpointsQuantity) - 1] + adjacencyMatrix[i][0] < memoizationMatrix[end][(1 << checkpointsQuantity) - 1] + adjacencyMatrix[end][0]) {
-      // Update the end of the path.
-      end = i;
-    }
-  }
-
-  // Define the path vector to store the reconstructed path.
-  vector<int> shortestOrder;
-
-  // Reconstruct the path.
-  int mask = (1 << checkpointsQuantity) - 1;
-
-  // Iterate over all the checkpoints.
-  while (parentMatrix[end][mask] != -1) {
-    // Add the current checkpoint to the path.
-    shortestOrder.push_back(end);
-
-    // Update the mask and the end of the path.
-    int newMask = mask ^ (1 << end);
-    end = parentMatrix[end][mask];
-    mask = newMask;
-
-    // Increment the number of iterations to generate the maze.
-    iterationsTookToGenerate++;
-  }
-
-  // Add the last checkpoint to the path.
-  shortestOrder.push_back(end);
-
-  // Add the first checkpoint to the path.
-  shortestOrder.push_back(0);
-
-  // Reverse the path.
-  reverse(shortestOrder.begin(), shortestOrder.end());
-
-  // Remove the last element from the path, so the path does not end at the first checkpoint.
-  shortestOrder.pop_back();
-
-  // Construct the final order of the checkpoints.
-  vector<Cell> result;
-
-  // Reserve the size of the result vector.
-  result.reserve(shortestOrder.size());
-
-  // Add the checkpoints in the shortest order to the result vector.
-  for (int i : shortestOrder) {
-    result.push_back(checkpoints[i]);
-
-    // Increment the number of iterations to generate the maze.
-    iterationsTookToGenerate++;
-  }
-
-  // Deallocate the memoization matrix.
+  // Delete the memoization matrix and the parent matrix.
   for (int i = 0; i < checkpointsQuantity; i++) {
-      delete[] memoizationMatrix[i];
+    delete[] memoizationMatrix[i];
+    delete[] parentMatrix[i];
   }
   delete[] memoizationMatrix;
-
-  // Deallocate the parent matrix.
-  for (int i = 0; i < checkpointsQuantity; i++) {
-      delete[] parentMatrix[i];
-  }
   delete[] parentMatrix;
 
-  // Return the result.
-  return result;
+  return shortestPath;
+}
+
+// Method that implements the traveling salesman problem using Held-Karp (dynamic programming) algorithm and runs it in multiple threads.
+vector<Cell> Maze::tspHeldKarpParallel(vector<vector<double>> adjacencyMatrix) {
+  // Get all the checkpoints and their quantity.
+  const vector<Cell> checkpoints = getCheckpoints();
+  const unsigned int checkpointsQuantity = adjacencyMatrix.size();
+
+  // Display the stats of the threads.
+  unsigned int numThreadsAvailable = thread::hardware_concurrency();
+  cout << "  - Number of threads available: " << numThreadsAvailable << "\n";
+  cout << "  - Number of threads to be used: " << checkpointsQuantity << "\n";
+
+  // Define a vector to store all the threads.
+  vector<thread> threads;
+
+  // Define a mutex to lock the shortest path and shortest path length.
+  mutex shortestPathMutex;
+  mutex shortestPathLengthMutex;
+
+  // Define variables to store the shortest path and shortest path length.
+  vector<Cell> shortestPath;
+  double shortestPathLength = numeric_limits<double>::max();
+
+  // Define a function to be run by each thread.
+  auto threadFunction = [&](int startPoint) {
+    // Define a memoization matrix.
+    auto** memoizationMatrix = new double*[checkpointsQuantity];
+    for (int i = 0; i < checkpointsQuantity; i++) {
+      memoizationMatrix[i] = new double[1 << checkpointsQuantity];
+    }
+
+    // Define a matrix to reconstruct the path.
+    auto** parentMatrix = new int*[checkpointsQuantity];
+    for (int i = 0; i < checkpointsQuantity; i++) {
+      parentMatrix[i] = new int[1 << checkpointsQuantity];
+    }
+
+    // Initialize the memoization table with default values.
+    for (int i = 0; i < checkpointsQuantity; i++) {
+      for (int j = 0; j < (1 << checkpointsQuantity); j++) {
+        memoizationMatrix[i][j] = -1;
+        parentMatrix[i][j] = -1;
+      }
+    }
+
+    // Set the path that starts and ends at the current checkpoint.
+    memoizationMatrix[startPoint][1 << startPoint] = 0;
+
+    // Iterate over all the possible subsets of checkpoints.
+    for (int mask = 1; mask < (1 << checkpointsQuantity); mask++) {
+      // Iterate over all the checkpoints.
+      for (int i = 0; i < checkpointsQuantity; i++) {
+        // If the current checkpoint is not in the current subset, skip it.
+        if (!(mask & (1 << i))) continue;
+
+        // Iterate over all the checkpoints.
+        for (int j = 0; j < checkpointsQuantity; j++) {
+          // If the current checkpoint is in the current subset or is the same as the current checkpoint, skip it.
+          if (mask & (1 << j) || i == j) continue;
+
+          // Calculate the new mask.
+          int newMask = mask | (1 << j);
+
+          // Check if the new mask is valid and if the path between the current and the next checkpoint exists.
+          if (memoizationMatrix[j][newMask] == -1 || memoizationMatrix[j][newMask] > memoizationMatrix[i][mask] + adjacencyMatrix[i][j]) {
+            // Update the memoization table and the parent matrix.
+            memoizationMatrix[j][newMask] = memoizationMatrix[i][mask] + adjacencyMatrix[i][j];
+            parentMatrix[j][newMask] = i;
+          }
+        }
+      }
+    }
+
+    // Find the shortest path that starts and ends at the current checkpoint.
+    vector<Cell> currentShortestPath;
+    double currentShortestPathLength = numeric_limits<double>::max();
+    for (int i = 0; i < checkpointsQuantity; i++) {
+      if (i == startPoint) continue;
+      if (currentShortestPathLength > memoizationMatrix[i][(1 << checkpointsQuantity) - 1] + adjacencyMatrix[i][startPoint]) {
+        currentShortestPathLength = memoizationMatrix[i][(1 << checkpointsQuantity) - 1] + adjacencyMatrix[i][startPoint];
+        currentShortestPath.clear();
+
+        // Reconstruct the shortest path.
+        int currentCheckpoint = i;
+        int currentMask = (1 << checkpointsQuantity) - 1;
+        while (currentCheckpoint != -1) {
+          currentShortestPath.push_back(checkpoints[currentCheckpoint]);
+          int parentCheckpoint = parentMatrix[currentCheckpoint][currentMask];
+          int parentMask = currentMask ^ (1 << currentCheckpoint);
+          currentCheckpoint = parentCheckpoint;
+          currentMask = parentMask;
+        }
+        reverse(currentShortestPath.begin(), currentShortestPath.end());
+      }
+    }
+
+    // Lock the shortest path and shortest path length and update them if the current path is shorter.
+    shortestPathMutex.lock();
+    if (currentShortestPathLength < shortestPathLength) {
+      shortestPathLength = currentShortestPathLength;
+      shortestPath = currentShortestPath;
+    }
+    shortestPathMutex.unlock();
+
+    // Delete the memoization matrix and the parent matrix.
+    for (int i = 0; i < checkpointsQuantity; i++) {
+      delete[] memoizationMatrix[i];
+      delete[] parentMatrix[i];
+    }
+    delete[] memoizationMatrix;
+    delete[] parentMatrix;
+  };
+
+  // Start a thread for each starting point.
+  threads.reserve(checkpointsQuantity);
+  for (int startPoint = 0; startPoint < checkpointsQuantity; startPoint++) {
+    threads.emplace_back(threadFunction, startPoint);
+  }
+
+  // Wait for all the threads to finish.
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  return shortestPath;
 }
 
 // Method that implements the traveling salesman problem using brute force algorithm.
@@ -427,16 +506,13 @@ vector<Cell> Maze::tspBruteForce(vector<vector<double>> adjacencyMatrix) {
 
     // Check if the current order is valid and if the path between the last and the first checkpoint exists.
     if (isValid && adjacencyMatrix[currentCheckpoint][order[0]] != 0) {
-      // Add the length of the path between the last and the first checkpoint to the total length.
-      length += adjacencyMatrix[currentCheckpoint][order[0]];
-
       // Check if the current order is the shortest order.
       if (length < shortestLength) {
         shortestLength = length;
         shortestOrder = order;
       }
     }
-  } while (next_permutation(order.begin() + 1, order.end()));
+  } while (next_permutation(order.begin(), order.end()));
 
   // Construct the final order of the checkpoints.
   vector<Cell> result;

@@ -38,4 +38,7 @@ string generateProgressBarString(unsigned int percentage, unsigned int maxNumber
 // Function that stops the function execution flow until the user presses enter.
 void waitForEnter(const string& message = "Press the \"Enter\" key to continue...");
 
+// Function that gets the file path of a file relative to the executable path.
+string getFilePath(const string& executablePath, const string& filePath);
+
 #endif
