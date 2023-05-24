@@ -206,8 +206,7 @@ void Maze::saveMazeReport() {
   }
 
   // Generate the file name from the current time.
-  time_t now = time(nullptr);
-  tm *ltm = localtime(&now);
+  tm *ltm = localtime(&generationTimestamp);
   string fileName = "_report_" + to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday) + "_" + to_string(ltm->tm_hour) + "-" + to_string(ltm->tm_min) + "-" + to_string(ltm->tm_sec) + ".txt";
   string filePath = executablePath + fileName;
 
@@ -242,8 +241,7 @@ void Maze::saveMazeGenerationStepsAsJson() {
   }
 
   // Generate the file name from the current time.
-  time_t now = time(nullptr);
-  tm *ltm = localtime(&now);
+  tm *ltm = localtime(&generationTimestamp);
   string fileName = "_json_" + to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday) + "_" + to_string(ltm->tm_hour) + "-" + to_string(ltm->tm_min) + "-" + to_string(ltm->tm_sec) + ".json";
   string filePath = executablePath + fileName;
   string minifiedFileName = "_json_" + to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday) + "_" + to_string(ltm->tm_hour) + "-" + to_string(ltm->tm_min) + "-" + to_string(ltm->tm_sec) + ".min.json";

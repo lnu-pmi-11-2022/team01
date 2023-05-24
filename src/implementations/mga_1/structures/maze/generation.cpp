@@ -5,6 +5,9 @@ void Maze::generateMaze() {
   // Validate the input.
   validateInputParameters();
 
+  // Set the generation timestamp.
+  generationTimestamp = time(nullptr);
+
   // Print the maze generation parameters.
   cout << colorString("Maze parameters:", "yellow", "black", "bold") << "\n";
   cout << "  - Width: " << width << "\n";

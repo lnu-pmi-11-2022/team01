@@ -37,6 +37,7 @@ class Maze {
   vector<vector<unsigned int>> finalMaze;
   vector<vector<vector<unsigned int>>> generationSteps;
   string executablePath;
+  time_t generationTimestamp;
 
   // Maze generation statistics.
   long long timePerformanceMs = 0;
