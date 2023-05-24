@@ -82,3 +82,8 @@ string Maze::getSolvingAlgorithmName() {
   return solvingAlgorithmName;
 }
 
+// Method that generates the maze report file.
+string Maze::generateMazeReportFile() {
+  return printMazeState(finalMaze, false, true, true);
+}
+

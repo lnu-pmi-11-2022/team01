@@ -53,6 +53,10 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
       cout << "  - Number of checkpoints: " << actualNumberOfCheckpoints << ".\n\n";
     }
     cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << splitNumberIntoBlocks(iterationsTookToGenerate) << " iterations) to generate.\n";
+
+    // Prompt user whether to save the maze.
+    saveMazeToFile();
+
     return;
   }
 
@@ -145,8 +149,6 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
       cout << "  - Solving algorithm: " << getSolvingAlgorithmName() << "\n\n";
 
       // Print the maze generation statistics.
-
-      // Print the maze generation statistics.
       if (minPathLength > 0 || actualNumberOfCheckpoints > 0) {
         cout << colorString("Maze statistics:", "yellow", "black", "bold") << "\n";
       }
@@ -179,6 +181,45 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
   // Stop the audio and join the audio thread
   stopFlag.store(true);
   soundThread.join();
+
+  // Prompt user whether to save the maze.
+  saveMazeToFile();
+}
+
+// Method that saves the maze to a file.
+void Maze::saveMazeToFile() {
+  // Prompt user whether to save the maze.
+  cout << "\n" << colorString("Would you like to save the maze to a file?", "yellow", "black", "bold") << " (" << colorString("Y", "green", "default", "bold") << "/" << colorString("N", "red", "default", "bold") << "):\n";
+  string answer;
+  cout << colorString("-->", "yellow", "black", "bold") << " ";
+  cin >> answer;
+
+  // Check if the user wants to save the maze.
+  if (answer != "y" && answer != "Y") {
+    return;
+  }
+
+  // Generate the file name from the current time.
+  time_t now = time(nullptr);
+  tm *ltm = localtime(&now);
+  string fileName = "_" + to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday) + "_" + to_string(ltm->tm_hour) + "-" + to_string(ltm->tm_min) + "-" + to_string(ltm->tm_sec) + ".txt";
+  string filePath = executablePath + fileName;
+
+  // Create the file.
+  ofstream file;
+  file.open(filePath, std::ios::out | std::ios::binary);
+
+  // Write the maze to the file.
+  file << generateMazeReportFile();
+
+  // Close the file.
+  file.close();
+
+  // Print the success message.
+  cout << "\n" << colorString("Maze saved successfully!", "green", "black", "bold") << "\n";
+
+  // Print the file path.
+  cout << "File path: " << colorString(filePath, "yellow", "black", "bold") << "\n";
 }
 
 // Method that filters out the steps where anything is not changing.
