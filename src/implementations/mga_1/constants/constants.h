@@ -34,8 +34,8 @@ const string END_SYMBOL = "EN";
 const unsigned int ESTIMATED_TIME_UPDATE_INTERVAL_STEPS = 10;
 const unsigned int MAZE_GENERATION_VISUALIZATION_MIN_DURATION_MS = 5000;
 const bool PRINT_MAZE_AS_IDS = false;
-const string GENERATION_BG_AUDIO_FILE_PATH = "../assets/generation.wav";
-const string VISUALIZATION_BG_AUDIO_FILE_PATH = "../assets/visualization.wav";
+const string GENERATION_BG_AUDIO_FILE_PATH = "assets/generation.wav";
+const string VISUALIZATION_BG_AUDIO_FILE_PATH = "assets/visualization.wav";
 
 // Define the supported solving algorithms.
 const vector<pair<SupportedSolvingAlgorithms, string>> SUPPORTED_SOLVING_ALGORITHMS = {
