@@ -7,25 +7,32 @@ void Maze::generateMaze() {
 
   // Print the maze generation parameters.
   cout << colorString("Maze parameters:", "yellow", "black", "bold") << "\n";
-  cout << "    - Width: " << width << "\n";
-  cout << "    - Height: " << height << "\n";
-  cout << "    - Checkpoints percentage: " << checkpointsPercentage << "%" << "\n\n";
+  cout << "  - Width: " << width << "\n";
+  cout << "  - Height: " << height << "\n";
+  switch (checkpointSettingType) {
+    case CheckpointSettingType::NUMBER:
+      cout << "  - Number of checkpoints: " << checkpointsValue << "\n";
+      break;
+    case CheckpointSettingType::PERCENTAGE:
+      cout << "  - Checkpoints percentage: " << checkpointsValue << "%" << "\n";
+      break;
+  }
+  cout << "  - Solving algorithm: " << getSolvingAlgorithmName() << "\n\n";
 
   // Wait for user input.
-  cout << colorString("Press the \"Enter\" key to start the maze generation...", "green", "black", "bold");
-  waitForEnter("");
-
-  // Print the maze generation header.
-  cout << "\n" << colorString("Generating maze...", "yellow", "black", "bold");
+  waitForEnter(colorString("Press the \"Enter\" key to start the maze generation...", "green", "black", "bold"));
 
   // Print a warning if the maze is large.
   if (width * height > MAZE_WARNING_THRESHOLD_AREA) {
-    cout << "\n" << colorString("WARNING: The maze is large, so the generation may take a while.", "red", "black", "bold");
+    cout << "\n" << colorString("WARNING: The maze is large, so the generation may take a while.", "red", "black", "bold") << "\n";
   }
-  cout << "\n\n";
+
+  // Print the maze generation header.
+  cout << "\n" << colorString("Generating maze...", "yellow", "black", "bold") << "\n";
 
   // Start the timer.
   auto startTime = chrono::high_resolution_clock::now();
+  auto stepStartTime = chrono::high_resolution_clock::now();
 
   // Initialize the maze with walls.
   finalMaze = vector<vector<unsigned int>>(height, vector<unsigned int>(width, WALL_ID));
@@ -98,18 +105,39 @@ void Maze::generateMaze() {
     // Add the current maze state to the list of maze states.
     generationSteps.push_back(finalMaze);
   }
-
-  // Distribute the checkpoints.
-  unsigned int numberOfCheckpoints = distributeCheckpoints();
+  cout << colorString("DONE!", "green", "black", "bold");
+  unsigned long long timePerformance = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - stepStartTime).count();
+  cout << colorString(" (Took " + millisecondsToTimeString(timePerformance) + ")", "white", "black", "bold") << "\n\n";
+  stepStartTime = chrono::high_resolution_clock::now();
 
   // Check if there are any checkpoints.
-  if (numberOfCheckpoints > 0) {
+  unsigned int numberOfCheckpoints = 0;
+  if (checkpointsValue != 0) {
+    // Distribute the checkpoints.
+    cout << colorString("Distributing the checkpoints...", "yellow", "black", "bold") << "\n";
+    numberOfCheckpoints = distributeCheckpoints();
+    cout << colorString("DONE! (" + to_string(numberOfCheckpoints) + " checkpoints)", "green", "black", "bold");
+    timePerformance = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - stepStartTime).count();
+    cout << colorString(" (Took " + millisecondsToTimeString(timePerformance) + ")", "white", "black", "bold") << "\n\n";
+
+    if (numberOfCheckpoints < requestedNumberOfCheckpoints) {
+      cout << colorString("The number of checkpoints was decreased from " + to_string(requestedNumberOfCheckpoints) + " to the maximum allowed " + to_string(numberOfCheckpoints) + " for this maze.", "white", "red", "bold") << "\n\n";
+    }
+  }
+
+  // Check if there are any checkpoints.
+  if (numberOfCheckpoints > 0 && solvingAlgorithm != SupportedSolvingAlgorithms::NONE) {
     // Generate the solution.
     generateSolution();
   }
 
   // Filter out the steps where the path is not changing.
+  stepStartTime = chrono::high_resolution_clock::now();
+  cout << colorString("Filtering frames...", "yellow", "black", "bold") << "\n";
   filterSteps();
+  cout << colorString("DONE!", "green", "black", "bold");
+  timePerformance = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - stepStartTime).count();
+  cout << colorString(" (Took " + millisecondsToTimeString(timePerformance) + ")", "white", "black", "bold") << "\n\n";
 
   // Stop the timer.
   auto endTime = chrono::high_resolution_clock::now();
@@ -124,10 +152,33 @@ unsigned int Maze::distributeCheckpoints() {
   unsigned int pathCellsCount = getTheNumberOfCells(PATH_ID);
 
   // Calculate the requested number of checkpoints.
-  requestedNumberOfCheckpoints = pathCellsCount * checkpointsPercentage / 100;
+  switch (checkpointSettingType) {
+    case CheckpointSettingType::NUMBER:
+      requestedNumberOfCheckpoints = checkpointsValue;
+      break;
+    case CheckpointSettingType::PERCENTAGE:
+      requestedNumberOfCheckpoints = max((int)(pathCellsCount * checkpointsValue / 100), (int)MAZE_MIN_CHECKPOINTS_NUMBER);
+      break;
+    default:
+      break;
+  }
+
+  // Get the maximum number of checkpoints.
+  unsigned int maxNumberOfCheckpoints;
+  switch (solvingAlgorithm) {
+    case SupportedSolvingAlgorithms::HELD_KARP:
+      maxNumberOfCheckpoints = min(MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP, pathCellsCount);
+      break;
+    case SupportedSolvingAlgorithms::BRUTE_FORCE:
+      maxNumberOfCheckpoints = min(MAZE_MAX_CHECKPOINTS_NUMBER_BRUTE_FORCE, pathCellsCount);
+      break;
+    default:
+      maxNumberOfCheckpoints = pathCellsCount;
+      break;
+  }
 
   // Calculate the number of checkpoints.
-  unsigned int checkpointsCount = min(requestedNumberOfCheckpoints, MAZE_MAX_CHECKPOINTS_NUMBER);
+  unsigned int checkpointsCount = min(requestedNumberOfCheckpoints, maxNumberOfCheckpoints);
 
   // Distribute the checkpoints.
   unsigned int currentCheckpointsCount = 0;

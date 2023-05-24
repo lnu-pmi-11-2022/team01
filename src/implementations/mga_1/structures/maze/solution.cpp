@@ -2,17 +2,49 @@
 
 // Method that generates the solution.
 void Maze::generateSolution() {
+  // Set the time point for benchmarking.
+  auto stepStartTime = chrono::high_resolution_clock::now();
+
   // Get the shortest paths between each pair of checkpoints.
+  cout << colorString("Finding the shortest paths between each pair of checkpoints...", "yellow", "black", "bold") << "\n";
   vector<Path> paths = findShortestPathsBetweenEachPairOfCheckpoints();
+  cout << colorString("DONE!", "green", "black", "bold");
+  unsigned long long timePerformance = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - stepStartTime).count();
+  cout << colorString(" (Took " + millisecondsToTimeString(timePerformance) + ")", "white", "black", "bold") << "\n\n";
+  stepStartTime = chrono::high_resolution_clock::now();
 
   // Create the adjacency matrix.
+  cout << colorString("Creating the adjacency matrix...", "yellow", "black", "bold") << "\n";
   vector<vector<double>> matrix = createAdjacencyMatrix(paths);
+  cout << colorString("DONE!", "green", "black", "bold");
+  timePerformance = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - stepStartTime).count();
+  cout << colorString(" (Took " + millisecondsToTimeString(timePerformance) + ")", "white", "black", "bold") << "\n\n";
+  stepStartTime = chrono::high_resolution_clock::now();
 
-  // Apply the traveling salesman problem algorithm.
-  vector<Cell> tspResult = tspAlgorithm(matrix);
+  // Apply the chosen traveling salesman problem solving algorithm.
+  cout << colorString("Applying the chosen TSP solving algorithm...", "yellow", "black", "bold") << "\n";
+  vector<Cell> tspResult;
+  switch (solvingAlgorithm) {
+    case SupportedSolvingAlgorithms::HELD_KARP:
+      tspResult = tspHeldKarp(matrix);
+      break;
+    case SupportedSolvingAlgorithms::BRUTE_FORCE:
+      tspResult = tspBruteForce(matrix);
+      break;
+    default:
+      break;
+  }
+  cout << colorString("DONE!", "green", "black", "bold");
+  timePerformance = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - stepStartTime).count();
+  cout << colorString(" (Took " + millisecondsToTimeString(timePerformance) + ")", "white", "black", "bold") << "\n\n";
+  stepStartTime = chrono::high_resolution_clock::now();
 
   // Construct the final path.
+  cout << colorString("Constructing the final path...", "yellow", "black", "bold") << "\n";
   Path finalPath = constructFinalPath(tspResult, paths);
+  cout << colorString("DONE!", "green", "black", "bold");
+  timePerformance = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - stepStartTime).count();
+  cout << colorString(" (Took " + millisecondsToTimeString(timePerformance) + ")", "white", "black", "bold") << "\n\n";
 
   // Set the minimum path length.
   minPathLength = (unsigned int)finalPath.length;
@@ -41,7 +73,7 @@ void Maze::generateSolution() {
 
       // Check if the previous cell was a checkpoint.
       bool isCheckpoint = false;
-      for (auto & checkpoint : checkpoints) {
+      for (auto &checkpoint : checkpoints) {
         if (previousCell.x == checkpoint.x && previousCell.y == checkpoint.y) {
           isCheckpoint = true;
           break;
@@ -180,7 +212,7 @@ Path Maze::findShortestPathBetweenCells(Cell startCell, Cell endCell) {
 }
 
 // Method that creates an adjacency matrix from a list of paths.
-vector<vector<double>> Maze::createAdjacencyMatrix(const vector<Path>& paths) {
+vector<vector<double>> Maze::createAdjacencyMatrix(const vector<Path> &paths) {
   // Get all the checkpoints.
   vector<Cell> checkpoints = getCheckpoints();
 
@@ -202,9 +234,149 @@ vector<vector<double>> Maze::createAdjacencyMatrix(const vector<Path>& paths) {
   return matrix;
 }
 
-// Method that implements the traveling salesman problem algorithm.
-// TODO: Rewrite using Held-Karp algorithm.
-vector<Cell> Maze::tspAlgorithm(vector<vector<double>> adjacencyMatrix) {
+// Method that implements the traveling salesman problem using Held-Karp (dynamic programming) algorithm.
+// TODO: Fix the algorithm picking the wrong starting point.
+vector<Cell> Maze::tspHeldKarp(vector<vector<double>> adjacencyMatrix) {
+  // Get all the checkpoints and their quantity.
+  const vector<Cell> checkpoints = getCheckpoints();
+  const unsigned int checkpointsQuantity = adjacencyMatrix.size();
+
+  // Define a memoization matrix.
+  auto** memoizationMatrix = new double*[checkpointsQuantity];
+  for (int i = 0; i < checkpointsQuantity; i++) {
+    memoizationMatrix[i] = new double[1 << checkpointsQuantity];
+  }
+
+  // Define a matrix to reconstruct the path.
+  auto** parentMatrix = new int*[checkpointsQuantity];
+  for (int i = 0; i < checkpointsQuantity; i++) {
+      parentMatrix[i] = new int[1 << checkpointsQuantity];
+  }
+
+  // Initialize the memoization table with default values.
+  for (int i = 0; i < checkpointsQuantity; i++) {
+    for (int j = 0; j < (1 << checkpointsQuantity); j++) {
+      memoizationMatrix[i][j] = -1;
+      parentMatrix[i][j] = -1;
+
+      // Increment the number of iterations to generate the maze.
+      iterationsTookToGenerate++;
+    }
+  }
+
+  // Set the path that starts and ends at the first checkpoint.
+  memoizationMatrix[0][1] = 0;
+
+  // Iterate over all the possible subsets of checkpoints.
+  for (int mask = 1; mask < (1 << checkpointsQuantity); mask++) {
+    // Iterate over all the checkpoints.
+    for (int i = 0; i < checkpointsQuantity; i++) {
+      // If the current checkpoint is not in the current subset, skip it.
+      if (!(mask & (1 << i))) continue;
+
+      // Iterate over all the checkpoints.
+      for (int j = 0; j < checkpointsQuantity; j++) {
+        // Increment the number of iterations to generate the maze.
+        iterationsTookToGenerate++;
+
+        // If the current checkpoint is in the current subset, skip it.
+        if (mask & (1 << j) || i == j) continue;
+
+        // Calculate the new mask.
+        int newMask = mask | (1 << j);
+
+        // Check if the new mask is valid and if the path between the current and the next checkpoint exists.
+        if (memoizationMatrix[j][newMask] == -1 || memoizationMatrix[j][newMask] > memoizationMatrix[i][mask] + adjacencyMatrix[i][j]) {
+          // Update the memoization table and the parent matrix.
+          memoizationMatrix[j][newMask] = memoizationMatrix[i][mask] + adjacencyMatrix[i][j];
+          parentMatrix[j][newMask] = i;
+        }
+      }
+    }
+  }
+
+  // Define the end of the path.
+  int end = 0;
+
+  // Iterate over all the checkpoints.
+  for (int i = 1; i < checkpointsQuantity; i++) {
+    // Increment the number of iterations to generate the maze.
+    iterationsTookToGenerate++;
+
+    // If the current checkpoint is not in the current subset, skip it.
+    if (memoizationMatrix[i][(1 << checkpointsQuantity) - 1] == -1) continue;
+
+    // Check if the path between the current and the next checkpoint exists.
+    if (memoizationMatrix[i][(1 << checkpointsQuantity) - 1] + adjacencyMatrix[i][0] < memoizationMatrix[end][(1 << checkpointsQuantity) - 1] + adjacencyMatrix[end][0]) {
+      // Update the end of the path.
+      end = i;
+    }
+  }
+
+  // Define the path vector to store the reconstructed path.
+  vector<int> shortestOrder;
+
+  // Reconstruct the path.
+  int mask = (1 << checkpointsQuantity) - 1;
+
+  // Iterate over all the checkpoints.
+  while (parentMatrix[end][mask] != -1) {
+    // Add the current checkpoint to the path.
+    shortestOrder.push_back(end);
+
+    // Update the mask and the end of the path.
+    int newMask = mask ^ (1 << end);
+    end = parentMatrix[end][mask];
+    mask = newMask;
+
+    // Increment the number of iterations to generate the maze.
+    iterationsTookToGenerate++;
+  }
+
+  // Add the last checkpoint to the path.
+  shortestOrder.push_back(end);
+
+  // Add the first checkpoint to the path.
+  shortestOrder.push_back(0);
+
+  // Reverse the path.
+  reverse(shortestOrder.begin(), shortestOrder.end());
+
+  // Remove the last element from the path, so the path does not end at the first checkpoint.
+  shortestOrder.pop_back();
+
+  // Construct the final order of the checkpoints.
+  vector<Cell> result;
+
+  // Reserve the size of the result vector.
+  result.reserve(shortestOrder.size());
+
+  // Add the checkpoints in the shortest order to the result vector.
+  for (int i : shortestOrder) {
+    result.push_back(checkpoints[i]);
+
+    // Increment the number of iterations to generate the maze.
+    iterationsTookToGenerate++;
+  }
+
+  // Deallocate the memoization matrix.
+  for (int i = 0; i < checkpointsQuantity; i++) {
+      delete[] memoizationMatrix[i];
+  }
+  delete[] memoizationMatrix;
+
+  // Deallocate the parent matrix.
+  for (int i = 0; i < checkpointsQuantity; i++) {
+      delete[] parentMatrix[i];
+  }
+  delete[] parentMatrix;
+
+  // Return the result.
+  return result;
+}
+
+// Method that implements the traveling salesman problem using brute force algorithm.
+vector<Cell> Maze::tspBruteForce(vector<vector<double>> adjacencyMatrix) {
   // Get all the checkpoints.
   vector<Cell> checkpoints = getCheckpoints();
 
@@ -285,7 +457,7 @@ vector<Cell> Maze::tspAlgorithm(vector<vector<double>> adjacencyMatrix) {
 }
 
 // Method that constructs the final path from the order of the checkpoints and the paths.
-Path Maze::constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path>& paths) {
+Path Maze::constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path> &paths) {
   // Define a vector to store the final path.
   vector<Cell> finalPath;
 
@@ -293,12 +465,13 @@ Path Maze::constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path>&
   for (int i = 0; i < checkpointsOrder.size() - 1; i++) {
     // Get the current and the next checkpoint.
     Cell checkpoint1 = checkpointsOrder[i];
-    Cell checkpoint2 = checkpointsOrder[i+1];
+    Cell checkpoint2 = checkpointsOrder[i + 1];
 
     // Iterate over the paths.
     for (Path path : paths) {
       // Check if the path has the same checkpoints as the current and the next checkpoint.
-      if ((path.checkpoints[0] == checkpoint1 && path.checkpoints[1] == checkpoint2) || (path.checkpoints[0] == checkpoint2 && path.checkpoints[1] == checkpoint1)) {
+      if ((path.checkpoints[0] == checkpoint1 && path.checkpoints[1] == checkpoint2)
+          || (path.checkpoints[0] == checkpoint2 && path.checkpoints[1] == checkpoint1)) {
         // Add the path to the final path.
         if (path.checkpoints[0] == checkpoint1) {
           finalPath.push_back(path.checkpoints[0]);
@@ -311,7 +484,7 @@ Path Maze::constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path>&
           finalPath.push_back(path.checkpoints[1]);
         } else {
           finalPath.push_back(path.checkpoints[1]);
-          for (int j = (int)path.path.size() - 1; j >= 0; j--) {
+          for (int j = (int) path.path.size() - 1; j >= 0; j--) {
             finalPath.push_back(path.path[j]);
 
             // Increment the number of iterations to generate the maze.
@@ -329,7 +502,7 @@ Path Maze::constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path>&
   // Filter out duplicate consecutive cells
   vector<Cell> filteredFinalPath;
   for (int i = 0; i < finalPath.size(); i++) {
-    if (i == 0 || finalPath[i] != finalPath[i-1]) {
+    if (i == 0 || finalPath[i] != finalPath[i - 1]) {
       filteredFinalPath.push_back(finalPath[i]);
     }
 
@@ -337,8 +510,27 @@ Path Maze::constructFinalPath(vector<Cell> checkpointsOrder, const vector<Path>&
     iterationsTookToGenerate++;
   }
 
-  // TODO: Filter out cells when the path passed through all the checkpoints.
+  // Filter out cells when the path passed through all the checkpoints.
+  vector<Cell> passedCheckpoints;
+  for (int i = 0; i < filteredFinalPath.size(); i++) {
+    // Get the current cell.
+    Cell currentCell = filteredFinalPath[i];
+
+    // Check if the current cell is a checkpoint and if it was not passed before.
+    if (find(checkpointsOrder.begin(), checkpointsOrder.end(), currentCell) != checkpointsOrder.end()
+        && find(passedCheckpoints.begin(), passedCheckpoints.end(), currentCell) == passedCheckpoints.end()) {
+      // Add the current cell to the passed checkpoints.
+      passedCheckpoints.push_back(currentCell);
+    }
+
+    // Check if the path passed through all the checkpoints.
+    if (passedCheckpoints.size() == checkpointsOrder.size()) {
+      // Erase the cells after the current cell and break from the loop.
+      filteredFinalPath.erase(filteredFinalPath.begin() + i + 1, filteredFinalPath.end());
+      break;
+    }
+  }
 
   // Return the final path.
-  return {filteredFinalPath, (double)(filteredFinalPath.size() - 1), checkpointsOrder};
+  return {filteredFinalPath, (double) (filteredFinalPath.size() - 1), checkpointsOrder};
 }

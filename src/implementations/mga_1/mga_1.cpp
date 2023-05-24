@@ -10,7 +10,7 @@ unsigned int promptForParameter(const string& parameterName, unsigned int minVal
   // Prompt the user for the parameter value until it is valid.
   while (!valid) {
     cout << colorString("Enter the " + parameterName + ":", "green", "black", "bold") << "\n";
-    cout << colorString("--> ", "yellow", "black", "bold");
+    cout << colorString("-->", "yellow", "black", "bold") << " ";
     cin >> parameterValue;
 
     // Validate the maze width.
@@ -26,6 +26,39 @@ unsigned int promptForParameter(const string& parameterName, unsigned int minVal
 
   // Return the parameter value.
   return parameterValue;
+}
+
+// Function that prompts the user for a choice.
+template <typename T>
+T promptForChoice(const string& message, vector<pair<T, string>> choices) {
+  // Initialize the choice.
+  bool isValid = false;
+  int choice;
+
+  // List the choices.
+  cout << colorString(message, "green", "black", "bold") << "\n";
+  for (int i = 0; i < choices.size(); i++) {
+      cout << "  " << i + 1 << ". " << choices[i].second << "\n";
+  }
+
+  // Prompt the user for the choice until it is valid.
+  while (!isValid) {
+      cout << colorString("-->", "yellow", "black", "bold") << " ";
+      cin >> choice;
+
+      // Validate the choice.
+      if (choice < 1 || choice > choices.size()) {
+          cout << "\n" << colorString("Invalid choice. Please try again.", "red", "black", "bold") << "\n";
+      } else {
+        isValid = true;
+      }
+  }
+
+  // Print a new line.
+  cout << "\n";
+
+  // Return the choice.
+  return choices[choice - 1].first;
 }
 
 // Function that runs the maze generation algorithm.
@@ -62,11 +95,39 @@ void mga1() {
   // Prompt the user to enter the maze height.
   unsigned int mazeHeight = promptForParameter("maze height", MAZE_MIN_HEIGHT, MAZE_MAX_HEIGHT);
 
-  // Prompt the user to enter the maze checkpoints percentage.
-  unsigned int checkpointsPercentage = promptForParameter("maze checkpoints percentage", MAZE_MIN_CHECKPOINTS_PERCENTAGE, MAZE_MAX_CHECKPOINTS_PERCENTAGE);
+  // Prompt the user to choose the checkpoint setting type and a value.
+  unsigned int checkpointsValue = 0;
+  auto checkpointSetting = promptForChoice<CheckpointSettingType>("Choose the checkpoint setting type:", SUPPORTED_CHECKPOINT_SETTING_TYPES);
+  switch (checkpointSetting) {
+    case CheckpointSettingType::NUMBER:
+      // Prompt the user to enter the maze checkpoints number.
+      checkpointsValue = promptForParameter("checkpoints number", MAZE_MIN_CHECKPOINTS_SETTING, MAZE_MAX_CHECKPOINTS_SETTING);
+      break;
+    case CheckpointSettingType::PERCENTAGE:
+      // Prompt the user to enter the maze checkpoints percentage.
+      checkpointsValue = promptForParameter("checkpoints percentage", MAZE_MIN_CHECKPOINTS_SETTING, MAZE_MAX_CHECKPOINTS_PERCENTAGE);
+      break;
+  }
+
+  // If the checkpoints value is greater than 0, prompt the user to choose the maze solving algorithm.
+  SupportedSolvingAlgorithms solvingAlgorithm = SupportedSolvingAlgorithms::NONE;
+  if (checkpointsValue > 0) {
+    // Prompt the user to choose the maze solving algorithm.
+    solvingAlgorithm = promptForChoice<SupportedSolvingAlgorithms>("Choose the maze solving algorithm:", SUPPORTED_SOLVING_ALGORITHMS);
+  }
+
+  // If the checkpoints value exceeds the maximum allowed for the chosen algorithm, print a warning message and decrease the value to the maximum allowed.
+  if (solvingAlgorithm == SupportedSolvingAlgorithms::HELD_KARP && checkpointSetting == CheckpointSettingType::NUMBER && checkpointsValue > MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP) {
+    cout << colorString("The number of checkpoints was decreased from " + to_string(checkpointsValue) + " to the maximum allowed " + to_string(MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP) + " for this algorithm.", "white", "red", "bold") << "\n\n";
+    checkpointsValue = MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP;
+  }
+  if (solvingAlgorithm == SupportedSolvingAlgorithms::BRUTE_FORCE && checkpointSetting == CheckpointSettingType::NUMBER && checkpointsValue > MAZE_MAX_CHECKPOINTS_NUMBER_BRUTE_FORCE) {
+    cout << colorString("The number of checkpoints was decreased from " + to_string(checkpointsValue) + " to the maximum allowed " + to_string(MAZE_MAX_CHECKPOINTS_NUMBER_BRUTE_FORCE) + " for this algorithm.", "white", "red", "bold") << "\n\n";
+    checkpointsValue = MAZE_MAX_CHECKPOINTS_NUMBER_BRUTE_FORCE;
+  }
 
   // Create the maze.
-  Maze maze(mazeWidth, mazeHeight, checkpointsPercentage);
+  Maze maze(mazeWidth, mazeHeight, checkpointsValue, checkpointSetting, solvingAlgorithm);
 
   // Visualize the maze generation.
   maze.visualizeMazeGeneration(MAZE_GENERATION_VISUALIZATION_MIN_DURATION_MS);

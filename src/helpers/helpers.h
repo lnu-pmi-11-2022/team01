@@ -29,6 +29,9 @@ void clearConsole();
 // Function that converts milliseconds to time string.
 string millisecondsToTimeString(unsigned long long milliseconds);
 
+// Function that splits a large number into blocks.
+string splitNumberIntoBlocks(unsigned long long number);
+
 // Function that generates a progress bar string.
 string generateProgressBarString(unsigned int percentage, unsigned int maxNumberOfBlocks);
 

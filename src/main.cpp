@@ -27,7 +27,7 @@ int main() {
     cout << "  3. Exit\n";
 
     cout << "\n" << colorString("Choose your option:", "yellow", "black", "bold") << "\n";
-    cout << colorString("-->", "white", "black", "bold") << " ";
+    cout << colorString("-->", "yellow", "black", "bold") << " ";
     cin >> choice;
 
     // Switch between the options.

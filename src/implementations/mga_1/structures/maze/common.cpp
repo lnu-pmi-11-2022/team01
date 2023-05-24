@@ -1,10 +1,12 @@
 #include "maze.h"
 
 // Constructor.
-Maze::Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsPercentage) {
+Maze::Maze(unsigned int _width, unsigned int _height, unsigned int _checkpointsValue, CheckpointSettingType _checkpointSettingType, SupportedSolvingAlgorithms _solvingAlgorithm) {
   this->width = _width;
   this->height = _height;
-  this->checkpointsPercentage = _checkpointsPercentage;
+  this->checkpointsValue = _checkpointsValue;
+  this->checkpointSettingType = _checkpointSettingType;
+  this->solvingAlgorithm = _solvingAlgorithm;
   generateMaze();
 }
 
@@ -14,7 +16,7 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
   cout << colorString("Maze has been generated in ", "green", "black", "bold") << colorString(millisecondsToTimeString(timePerformanceMs), "green", "black", "bold") << "!\n\n";
   cout << colorString("Would you like to visualize the maze generation?", "yellow", "black", "bold") << " (" << colorString("Y", "green", "default", "bold") << "/" << colorString("N", "red", "default", "bold") << "):\n";
   string answer;
-  cout << colorString("-->", "white", "black", "bold") << " ";
+  cout << colorString("-->", "yellow", "black", "bold") << " ";
   cin >> answer;
   cout << "\n";
 
@@ -22,14 +24,34 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
   if (answer != "y" && answer != "Y") {
     clearConsole();
     printMazeState(finalMaze);
-    cout << "\n" << colorString("Maze generation completed!", "green", "black", "bold") << "\n";
-    if (actualNumberOfCheckpoints < requestedNumberOfCheckpoints) {
-      cout << colorString("The number of checkpoints was decreased from " + to_string(requestedNumberOfCheckpoints) + " to " + to_string(actualNumberOfCheckpoints) + " to speed up maze generation.", "white", "red", "bold") << "\n\n";
+
+    cout << "\n" << colorString("Maze generation completed!", "green", "black", "bold") << "\n\n";
+
+    // Print the maze generation parameters.
+    cout << colorString("Maze parameters:", "yellow", "black", "bold") << "\n";
+    cout << "  - Width: " << width << "\n";
+    cout << "  - Height: " << height << "\n";
+    switch (checkpointSettingType) {
+      case CheckpointSettingType::NUMBER:
+        cout << "  - Number of checkpoints: " << checkpointsValue << "\n";
+        break;
+      case CheckpointSettingType::PERCENTAGE:
+        cout << "  - Checkpoints percentage: " << checkpointsValue << "%" << "\n";
+        break;
     }
-    cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << iterationsTookToGenerate << " iterations) to generate.\n";
+    cout << "  - Solving algorithm: " << getSolvingAlgorithmName() << "\n\n";
+
+    // Print the maze generation statistics.
+    if (minPathLength > 0 || actualNumberOfCheckpoints > 0) {
+      cout << colorString("Maze statistics:", "yellow", "black", "bold") << "\n";
+    }
     if (minPathLength > 0) {
-      cout << "Minimum path length: " << minPathLength << " cells.\n";
+      cout << "  - Minimum path length: " << minPathLength << " cells.\n";
     }
+    if (actualNumberOfCheckpoints > 0) {
+      cout << "  - Number of checkpoints: " << actualNumberOfCheckpoints << ".\n\n";
+    }
+    cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << splitNumberIntoBlocks(iterationsTookToGenerate) << " iterations) to generate.\n";
     return;
   }
 
@@ -88,16 +110,34 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
     // Check if the maze generation is completed.
     if (percentage == 100) {
       cout << "\n" << colorString("Maze generation visualization completed!", "green", "black", "bold") << "\n\n";
-      if (actualNumberOfCheckpoints < requestedNumberOfCheckpoints) {
-        cout << colorString(
-            "The number of checkpoints was decreased from " + to_string(requestedNumberOfCheckpoints) + " to "
-                + to_string(actualNumberOfCheckpoints) + " to speed up maze generation.", "white", "red", "bold")
-             << "\n\n";
+
+      // Print the maze generation parameters.
+      cout << colorString("Maze parameters:", "yellow", "black", "bold") << "\n";
+      cout << "  - Width: " << width << "\n";
+      cout << "  - Height: " << height << "\n";
+      switch (checkpointSettingType) {
+        case CheckpointSettingType::NUMBER:
+          cout << "  - Number of checkpoints: " << checkpointsValue << "\n";
+          break;
+        case CheckpointSettingType::PERCENTAGE:
+          cout << "  - Checkpoints percentage: " << checkpointsValue << "%" << "\n";
+          break;
       }
-      cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << iterationsTookToGenerate << " iterations) to generate.\n";
+      cout << "  - Solving algorithm: " << getSolvingAlgorithmName() << "\n\n";
+
+      // Print the maze generation statistics.
+
+      // Print the maze generation statistics.
+      if (minPathLength > 0 || actualNumberOfCheckpoints > 0) {
+        cout << colorString("Maze statistics:", "yellow", "black", "bold") << "\n";
+      }
       if (minPathLength > 0) {
-        cout << "Minimum path length: " << minPathLength << " cells.\n";
+        cout << "  - Minimum path length: " << minPathLength << " cells.\n";
       }
+      if (actualNumberOfCheckpoints > 0) {
+        cout << "  - Number of checkpoints: " << actualNumberOfCheckpoints << ".\n\n";
+      }
+      cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << splitNumberIntoBlocks(iterationsTookToGenerate) << " iterations) to generate.\n";
     } else {
       // Print the generation status.
       cout << "\n" << colorString("Maze generation is being visualized: ", "yellow", "black", "bold") << colorString(to_string(percentage), "yellow", "black", "bold") << colorString("%", "yellow", "black", "bold") << "\n";
@@ -141,10 +181,5 @@ void Maze::validateInputParameters() {
   // Check if the height is odd.
   if (height % 2 == 0) {
     height++;
-  }
-
-  // Check if the checkpoints percentage is between 0 and 100.
-  if (checkpointsPercentage < 0 || checkpointsPercentage > 100) {
-    throw invalid_argument("Checkpoints percentage must be between " + to_string(MAZE_MIN_CHECKPOINTS_PERCENTAGE) + " and " + to_string(MAZE_MAX_CHECKPOINTS_PERCENTAGE) + ".");
   }
 }
