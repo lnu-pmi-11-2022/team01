@@ -11,6 +11,7 @@
 #include <atomic>
 #include <mutex>
 #include <fstream>
+#include <sstream>
 #include <SFML/Audio.hpp>
 #include "../cell/cell.h"
 #include "../path/path.h"
@@ -110,7 +111,7 @@ class Maze {
   unsigned int getTheNumberOfCells(MazeCellTypeIds type);
 
   // Method that gets the solving algorithm name.
-  string getSolvingAlgorithmName();
+  string getSolvingAlgorithmName(bool noColors = false);
 
   // Method that generates the maze report file.
   string generateMazeReportFile();

@@ -44,6 +44,12 @@ const vector<pair<SupportedSolvingAlgorithms, string>> SUPPORTED_SOLVING_ALGORIT
   { SupportedSolvingAlgorithms::BRUTE_FORCE, colorString("Brute Force", "yellow", "default", "underline") + " (slow; non-heuristic; up to " + to_string(MAZE_MAX_CHECKPOINTS_NUMBER_BRUTE_FORCE) + " checkpoints)" },
   { SupportedSolvingAlgorithms::NONE, colorString("None", "yellow", "default", "underline") + " (just distribute checkpoints)" },
 };
+const vector<pair<SupportedSolvingAlgorithms, string>> SUPPORTED_SOLVING_ALGORITHMS_NO_COLOR_STRINGS = {
+  { SupportedSolvingAlgorithms::HELD_KARP_PARALLEL, "Held-Karp - Multithreading (the fastest; non-heuristic; up to " + to_string(MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP) + " checkpoints)" },
+  { SupportedSolvingAlgorithms::HELD_KARP, "Held-Karp - Single Thread (fast; non-heuristic; up to " + to_string(MAZE_MAX_CHECKPOINTS_NUMBER_HELD_KARP) + " checkpoints)" },
+  { SupportedSolvingAlgorithms::BRUTE_FORCE, "Brute Force (slow; non-heuristic; up to " + to_string(MAZE_MAX_CHECKPOINTS_NUMBER_BRUTE_FORCE) + " checkpoints)" },
+  { SupportedSolvingAlgorithms::NONE, "None (just distribute checkpoints)" },
+};
 
 // Define the supported checkpoint setting types.
 const vector<pair<CheckpointSettingType, string>> SUPPORTED_CHECKPOINT_SETTING_TYPES = {

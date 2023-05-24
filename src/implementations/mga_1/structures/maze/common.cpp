@@ -189,7 +189,7 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
 // Method that saves the maze to a file.
 void Maze::saveMazeToFile() {
   // Prompt user whether to save the maze.
-  cout << "\n" << colorString("Would you like to save the maze to a file?", "yellow", "black", "bold") << " (" << colorString("Y", "green", "default", "bold") << "/" << colorString("N", "red", "default", "bold") << "):\n";
+  cout << "\n" << colorString("Would you like to save the maze report to a file?", "yellow", "black", "bold") << " (" << colorString("Y", "green", "default", "bold") << "/" << colorString("N", "red", "default", "bold") << "):\n";
   string answer;
   cout << colorString("-->", "yellow", "black", "bold") << " ";
   cin >> answer;
@@ -202,7 +202,7 @@ void Maze::saveMazeToFile() {
   // Generate the file name from the current time.
   time_t now = time(nullptr);
   tm *ltm = localtime(&now);
-  string fileName = "_" + to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday) + "_" + to_string(ltm->tm_hour) + "-" + to_string(ltm->tm_min) + "-" + to_string(ltm->tm_sec) + ".txt";
+  string fileName = "_report_" + to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday) + "_" + to_string(ltm->tm_hour) + "-" + to_string(ltm->tm_min) + "-" + to_string(ltm->tm_sec) + ".txt";
   string filePath = executablePath + fileName;
 
   // Create the file.
@@ -216,7 +216,7 @@ void Maze::saveMazeToFile() {
   file.close();
 
   // Print the success message.
-  cout << "\n" << colorString("Maze saved successfully!", "green", "black", "bold") << "\n";
+  cout << "\n" << colorString("Maze report saved successfully!", "green", "black", "bold") << "\n";
 
   // Print the file path.
   cout << "File path: " << colorString(filePath, "yellow", "black", "bold") << "\n";

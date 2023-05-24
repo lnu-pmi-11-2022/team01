@@ -66,12 +66,15 @@ unsigned int Maze::getTheNumberOfCells(MazeCellTypeIds type) {
 }
 
 // Method that gets the name of solving algorithm.
-string Maze::getSolvingAlgorithmName() {
+string Maze::getSolvingAlgorithmName(bool noColors) {
   // Define the name of the solving algorithm.
   string solvingAlgorithmName;
 
+  // Define the solving algorithms.
+  vector<pair<SupportedSolvingAlgorithms, string>> solvingAlgorithms = noColors ? SUPPORTED_SOLVING_ALGORITHMS_NO_COLOR_STRINGS : SUPPORTED_SOLVING_ALGORITHMS;
+
   // Find the name of the solving algorithm.
-  for (auto & algorithm : SUPPORTED_SOLVING_ALGORITHMS) {
+  for (auto & algorithm : solvingAlgorithms) {
       if (algorithm.first == solvingAlgorithm) {
         solvingAlgorithmName = algorithm.second;
         break;
@@ -84,6 +87,44 @@ string Maze::getSolvingAlgorithmName() {
 
 // Method that generates the maze report file.
 string Maze::generateMazeReportFile() {
-  return printMazeState(finalMaze, false, true, true);
+  // Declare the report.
+  ostringstream report;
+
+  // Append the maze visualization.
+  report << "Maze visualization:\n";
+  report << printMazeState(finalMaze, false, true, true) << "\n";
+
+  // Append the raw maze.
+  report << "Raw maze:\n";
+  report << printMazeState(finalMaze, true, true) << "\n";
+
+  // Append the maze parameters.
+  report << "Maze parameters:\n";
+  report << "  - Width: " << width << "\n";
+  report << "  - Height: " << height << "\n";
+  switch (checkpointSettingType) {
+    case CheckpointSettingType::NUMBER:
+      report << "  - Number of checkpoints: " << checkpointsValue << "\n";
+      break;
+    case CheckpointSettingType::PERCENTAGE:
+      report << "  - Checkpoints percentage: " << checkpointsValue << "%" << "\n";
+      break;
+  }
+  report << "  - Solving algorithm: " << getSolvingAlgorithmName(true) << "\n\n";
+
+  // Append the maze generation statistics.
+  if (minPathLength > 0 || actualNumberOfCheckpoints > 0) {
+    report << "Maze statistics:\n";
+  }
+  if (minPathLength > 0) {
+    report << "  - Minimum path length: " << minPathLength << " cells.\n";
+  }
+  if (actualNumberOfCheckpoints > 0) {
+    report << "  - Number of checkpoints: " << actualNumberOfCheckpoints << ".\n\n";
+  }
+  report << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << splitNumberIntoBlocks(iterationsTookToGenerate) << " iterations) to generate.\n";
+
+  // Return the report.
+  return report.str();
 }
 
