@@ -54,8 +54,11 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
     }
     cout << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << splitNumberIntoBlocks(iterationsTookToGenerate) << " iterations) to generate.\n";
 
-    // Prompt user whether to save the maze.
-    saveMazeToFile();
+    // Prompt user whether to save the maze report.
+    saveMazeReport();
+
+    // Prompt user whether to save the maze generation steps as JSON.
+    saveMazeGenerationStepsAsJson();
 
     return;
   }
@@ -182,19 +185,22 @@ void Maze::visualizeMazeGeneration(unsigned int minVisualizationDurationMs) {
   stopFlag.store(true);
   soundThread.join();
 
-  // Prompt user whether to save the maze.
-  saveMazeToFile();
+  // Prompt user whether to save the maze report.
+  saveMazeReport();
+
+  // Prompt user whether to save the maze generation steps as JSON.
+  saveMazeGenerationStepsAsJson();
 }
 
-// Method that saves the maze to a file.
-void Maze::saveMazeToFile() {
-  // Prompt user whether to save the maze.
+// Method that saves the maze report to a file.
+void Maze::saveMazeReport() {
+  // Prompt user whether to save the maze report.
   cout << "\n" << colorString("Would you like to save the maze report to a file?", "yellow", "black", "bold") << " (" << colorString("Y", "green", "default", "bold") << "/" << colorString("N", "red", "default", "bold") << "):\n";
   string answer;
   cout << colorString("-->", "yellow", "black", "bold") << " ";
   cin >> answer;
 
-  // Check if the user wants to save the maze.
+  // Check if the user wants to save the maze report.
   if (answer != "y" && answer != "Y") {
     return;
   }
@@ -207,9 +213,9 @@ void Maze::saveMazeToFile() {
 
   // Create the file.
   ofstream file;
-  file.open(filePath, std::ios::out | std::ios::binary);
+  file.open(filePath);
 
-  // Write the maze to the file.
+  // Write the maze report to the file.
   file << generateMazeReportFile();
 
   // Close the file.
@@ -220,6 +226,55 @@ void Maze::saveMazeToFile() {
 
   // Print the file path.
   cout << "File path: " << colorString(filePath, "yellow", "black", "bold") << "\n";
+}
+
+// Method that saves the maze generation steps as a JSON to a file.
+void Maze::saveMazeGenerationStepsAsJson() {
+  // Prompt user whether to save the maze generation steps as a JSON.
+  cout << "\n" << colorString("Would you like to save the maze visualization steps as a JSON to a file?", "yellow", "black", "bold") << " (" << colorString("Y", "green", "default", "bold") << "/" << colorString("N", "red", "default", "bold") << "):\n";
+  string answer;
+  cout << colorString("-->", "yellow", "black", "bold") << " ";
+  cin >> answer;
+
+  // Check if the user wants to save the maze generation steps as a JSON.
+  if (answer != "y" && answer != "Y") {
+    return;
+  }
+
+  // Generate the file name from the current time.
+  time_t now = time(nullptr);
+  tm *ltm = localtime(&now);
+  string fileName = "_json_" + to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday) + "_" + to_string(ltm->tm_hour) + "-" + to_string(ltm->tm_min) + "-" + to_string(ltm->tm_sec) + ".json";
+  string filePath = executablePath + fileName;
+  string minifiedFileName = "_json_" + to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday) + "_" + to_string(ltm->tm_hour) + "-" + to_string(ltm->tm_min) + "-" + to_string(ltm->tm_sec) + ".min.json";
+  string minifiedFilePath = executablePath + minifiedFileName;
+
+  // Create the file.
+  ofstream file;
+  file.open(filePath);
+
+  // Write the maze generation steps to the file.
+  file << generateMazeGenerationStepsFile(false);
+
+  // Close the file.
+  file.close();
+
+  // Create the minified file.
+  ofstream minifiedFile;
+  minifiedFile.open(minifiedFilePath);
+
+  // Write the maze generation steps to the minified file.
+  minifiedFile << generateMazeGenerationStepsFile(true);
+
+  // Close the minified file.
+  minifiedFile.close();
+
+  // Print the success message.
+  cout << "\n" << colorString("Maze generation steps saved successfully!", "green", "black", "bold") << "\n";
+
+  // Print the file paths.
+  cout << "File path: " << colorString(filePath, "yellow", "black", "bold") << "\n";
+  cout << "Minified file path: " << colorString(minifiedFilePath, "yellow", "black", "bold") << "\n";
 }
 
 // Method that filters out the steps where anything is not changing.

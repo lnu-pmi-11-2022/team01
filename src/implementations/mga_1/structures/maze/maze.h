@@ -83,8 +83,11 @@ class Maze {
   // Method that visualizes the maze generation.
   void visualizeMazeGeneration(unsigned int minVisualizationDurationMs);
 
-  // Method that saves the maze to a file.
-  void saveMazeToFile();
+  // Method that saves the maze report to a file.
+  void saveMazeReport();
+
+  // Method that saves the maze generation steps as a JSON to a file.
+  void saveMazeGenerationStepsAsJson();
 
   // Method that prints the maze state.
   static string printMazeState(const vector<vector<unsigned int>>& mazeState, bool printAsIDs = PRINT_MAZE_AS_IDS, bool noOutput = false, bool noColors = false);
@@ -115,6 +118,9 @@ class Maze {
 
   // Method that generates the maze report file.
   string generateMazeReportFile();
+
+  // Method that generates the maze generation steps file.
+  string generateMazeGenerationStepsFile(bool minified);
 };
 
 #endif
