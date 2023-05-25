@@ -215,7 +215,6 @@ void print_matrix() {
 
 void mga2() {
   clearConsole();
-  cout << "Generating maze..." << endl;
 
   // Reinitialize the dist array
   for (int i = 0; i < 30; i++) {
@@ -257,8 +256,13 @@ void mga2() {
   }
 
   int number_of_generations = 0;
-  n = 50;
-  m = 105;
+  cout<<"Enter the height of the maze: ";
+  cin >> n;
+  cout<<"Enter the width of the maze: ";
+  cin >> m;
+
+  cout << "Generating maze..." << endl;
+
   matrix[n - 1][m - 1] = 1;
   while (matrix[n - 1][m - 1] == 1) {
     int k;
