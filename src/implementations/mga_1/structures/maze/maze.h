@@ -10,6 +10,8 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <fstream>
+#include <sstream>
 #include <SFML/Audio.hpp>
 #include "../cell/cell.h"
 #include "../path/path.h"
@@ -35,6 +37,7 @@ class Maze {
   vector<vector<unsigned int>> finalMaze;
   vector<vector<vector<unsigned int>>> generationSteps;
   string executablePath;
+  time_t generationTimestamp;
 
   // Maze generation statistics.
   long long timePerformanceMs = 0;
@@ -81,8 +84,14 @@ class Maze {
   // Method that visualizes the maze generation.
   void visualizeMazeGeneration(unsigned int minVisualizationDurationMs);
 
+  // Method that saves the maze report to a file.
+  void saveMazeReport();
+
+  // Method that saves the maze generation steps as a JSON to a file.
+  void saveMazeGenerationStepsAsJson();
+
   // Method that prints the maze state.
-  static void printMazeState(const vector<vector<unsigned int>>& mazeState, bool printAsIDs = PRINT_MAZE_AS_IDS);
+  static string printMazeState(const vector<vector<unsigned int>>& mazeState, bool printAsIDs = PRINT_MAZE_AS_IDS, bool noOutput = false, bool noColors = false);
 
   // Method that filters out the steps where anything is not changing.
   void filterSteps();
@@ -106,7 +115,13 @@ class Maze {
   unsigned int getTheNumberOfCells(MazeCellTypeIds type);
 
   // Method that gets the solving algorithm name.
-  string getSolvingAlgorithmName();
+  string getSolvingAlgorithmName(bool noColors = false);
+
+  // Method that generates the maze report file.
+  string generateMazeReportFile();
+
+  // Method that generates the maze generation steps file.
+  string generateMazeGenerationStepsFile(bool minified);
 };
 
 #endif

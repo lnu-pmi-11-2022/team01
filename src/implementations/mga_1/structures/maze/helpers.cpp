@@ -66,12 +66,15 @@ unsigned int Maze::getTheNumberOfCells(MazeCellTypeIds type) {
 }
 
 // Method that gets the name of solving algorithm.
-string Maze::getSolvingAlgorithmName() {
+string Maze::getSolvingAlgorithmName(bool noColors) {
   // Define the name of the solving algorithm.
   string solvingAlgorithmName;
 
+  // Define the solving algorithms.
+  vector<pair<SupportedSolvingAlgorithms, string>> solvingAlgorithms = noColors ? SUPPORTED_SOLVING_ALGORITHMS_NO_COLOR_STRINGS : SUPPORTED_SOLVING_ALGORITHMS;
+
   // Find the name of the solving algorithm.
-  for (auto & algorithm : SUPPORTED_SOLVING_ALGORITHMS) {
+  for (auto & algorithm : solvingAlgorithms) {
       if (algorithm.first == solvingAlgorithm) {
         solvingAlgorithmName = algorithm.second;
         break;
@@ -82,3 +85,110 @@ string Maze::getSolvingAlgorithmName() {
   return solvingAlgorithmName;
 }
 
+// Method that generates the maze report file.
+string Maze::generateMazeReportFile() {
+  // Declare the report.
+  ostringstream report;
+
+  // Append the maze visualization.
+  report << "Maze visualization:\n";
+  report << printMazeState(finalMaze, false, true, true) << "\n";
+
+  // Append the raw maze.
+  report << "Raw maze:\n";
+  report << printMazeState(finalMaze, true, true) << "\n";
+
+  // Append the maze parameters.
+  report << "Maze parameters:\n";
+  report << "  - Width: " << width << "\n";
+  report << "  - Height: " << height << "\n";
+  switch (checkpointSettingType) {
+    case CheckpointSettingType::NUMBER:
+      report << "  - Number of checkpoints: " << checkpointsValue << "\n";
+      break;
+    case CheckpointSettingType::PERCENTAGE:
+      report << "  - Checkpoints percentage: " << checkpointsValue << "%" << "\n";
+      break;
+  }
+  report << "  - Solving algorithm: " << getSolvingAlgorithmName(true) << "\n\n";
+
+  // Append the maze generation statistics.
+  if (minPathLength > 0 || actualNumberOfCheckpoints > 0) {
+    report << "Maze statistics:\n";
+  }
+  if (minPathLength > 0) {
+    report << "  - Minimum path length: " << minPathLength << " cells.\n";
+  }
+  if (actualNumberOfCheckpoints > 0) {
+    report << "  - Number of checkpoints: " << actualNumberOfCheckpoints << ".\n\n";
+  }
+  report << "Took " << millisecondsToTimeString(timePerformanceMs) << " (" << splitNumberIntoBlocks(iterationsTookToGenerate) << " iterations) to generate.\n";
+
+  // Return the report.
+  return report.str();
+}
+
+// Method that generates the maze generation steps file.
+string Maze::generateMazeGenerationStepsFile(bool minified) {
+    // Declare the report.
+    ostringstream report;
+
+    // Append the JSON array start.
+    report << "[\n";
+
+    // Iterate over the steps.
+    for (auto & step : generationSteps) {
+      // Append the JSON array start.
+      report << "  [\n";
+
+      // Iterate over the rows.
+      for (auto & row : step) {
+        // Append the JSON array start.
+        report << "    [";
+
+        // Iterate over the cells.
+        for (auto & cell : row) {
+          // Append the cell.
+          report << cell;
+
+          // Check if it is the last cell.
+          if (&cell != &row.back()) {
+              // Append the comma.
+              report << ", ";
+          }
+        }
+
+        // Check if it is the last row.
+        if (&row != &step.back()) {
+            // Append the JSON array end.
+            report << "], \n";
+        } else {
+            // Append the JSON array end.
+            report << "]\n";
+        }
+      }
+
+      // Check if it is the last step.
+      if (&step != &generationSteps.back()) {
+          // Append the JSON array end.
+          report << "  ], \n";
+      } else {
+          // Append the JSON array end.
+          report << "  ]\n";
+      }
+    }
+
+    // Append the JSON array end.
+    report << "]";
+
+    // Get the report string.
+    string reportString = report.str();
+
+    // Remove all spaces and line breaks if the report should be minified.
+    if (minified) {
+      reportString.erase(remove_if(reportString.begin(), reportString.end(), ::isspace), reportString.end());
+    }
+
+    // Return the report.
+    return reportString;
+}
